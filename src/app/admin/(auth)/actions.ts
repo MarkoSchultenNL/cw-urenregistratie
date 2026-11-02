@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db, schema } from "@/lib/db";
-import { getAdminSession, hashPin, newDeviceKey, newPairingCode } from "@/lib/auth";
+import { getAdminSession, hashPassword, hashPin, newDeviceKey, newPairingCode, verifyAdminLogin } from "@/lib/auth";
 import { getSettings, saveSettings, type Settings } from "@/lib/settings";
 import { retryPending, syncEmployees, syncEntry } from "@/lib/sync";
 import { syncProducts } from "@/lib/products-sync";
@@ -190,4 +190,25 @@ export async function clearCacheAction() {
   tl.clearCache(tenantId);
   revalidatePath("/admin/teamleader");
   redirect("/admin/teamleader?ok=cache");
+}
+
+/* ---------- Account ---------- */
+
+export async function updateAccount(formData: FormData) {
+  const { adminId } = await requireSession();
+  const admin = db.select().from(schema.adminUsers).where(eq(schema.adminUsers.id, adminId)).get();
+  if (!admin) redirect("/admin/login");
+  const current = String(formData.get("currentPassword") ?? "");
+  if (!(await verifyAdminLogin(admin.email, current))) redirect("/admin/account?error=" + encodeURIComponent("Huidig wachtwoord klopt niet"));
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const pw = String(formData.get("newPassword") ?? "");
+  const pw2 = String(formData.get("newPassword2") ?? "");
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) redirect("/admin/account?error=" + encodeURIComponent("Ongeldig e-mailadres"));
+  if (pw && pw.length < 10) redirect("/admin/account?error=" + encodeURIComponent("Nieuw wachtwoord moet minimaal 10 tekens hebben"));
+  if (pw !== pw2) redirect("/admin/account?error=" + encodeURIComponent("De twee nieuwe wachtwoorden zijn niet gelijk"));
+  const patch: { email: string; passwordHash?: string } = { email };
+  if (pw) patch.passwordHash = await hashPassword(pw);
+  db.update(schema.adminUsers).set(patch).where(eq(schema.adminUsers.id, adminId)).run();
+  revalidatePath("/admin/account");
+  redirect("/admin/account?ok=1");
 }

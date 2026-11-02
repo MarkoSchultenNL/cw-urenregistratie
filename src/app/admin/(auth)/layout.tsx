@@ -20,6 +20,7 @@ const nav = [
   ["/admin/zuilen", "Zuilen"],
   ["/admin/instellingen", "Instellingen"],
   ["/admin/teamleader", "Teamleader"],
+  ["/admin/account", "Account"],
 ] as const;
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
