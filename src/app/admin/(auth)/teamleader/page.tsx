@@ -69,7 +69,7 @@ export default async function TeamleaderPage({ searchParams }: { searchParams: P
               Log in met een Teamleader-gebruiker die uren voor anderen mag boeken (beheerder). De zuil boekt namens de medewerkers via deze koppeling.
             </p>
             {cfg ? (
-              <a href="/api/teamleader/connect" className="inline-block rounded-lg bg-sky-600 px-4 py-2 font-semibold text-white hover:bg-sky-700">
+              <a href="/api/teamleader/connect" className="inline-block rounded-lg bg-cw-accent px-4 py-2 font-semibold uppercase tracking-wide text-white hover:bg-cw-accent-dark">
                 Koppelen met Teamleader Focus
               </a>
             ) : (
@@ -115,7 +115,7 @@ export default async function TeamleaderPage({ searchParams }: { searchParams: P
         <h2 className="mb-2 font-semibold">OAuth-app instellen in Teamleader</h2>
         <ol className="list-decimal space-y-1 pl-5 text-slate-700">
           <li>
-            Ga naar <a className="text-sky-700 underline" href="https://marketplace.focus.teamleader.eu/" target="_blank" rel="noreferrer">marketplace.focus.teamleader.eu</a> → Build → nieuwe integratie.
+            Ga naar <a className="text-cw-accent-dark underline" href="https://marketplace.focus.teamleader.eu/" target="_blank" rel="noreferrer">marketplace.focus.teamleader.eu</a> → Build → nieuwe integratie.
           </li>
           <li>
             Redirect-URI: <code className="rounded bg-slate-100 px-1">{redirect}</code>

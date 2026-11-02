@@ -62,7 +62,7 @@ export default async function Dashboard() {
           <p className="text-sm text-slate-500">Nog niet in Teamleader</p>
           <p className={`text-3xl font-bold ${errStats.n > 0 ? "text-rose-600" : ""}`}>{errStats.n}</p>
           {errStats.n > 0 && (
-            <Link href="/admin/boekingen?status=open" className="text-sm text-sky-700 underline">
+            <Link href="/admin/boekingen?status=open" className="text-sm text-cw-accent-dark underline">
               Bekijken
             </Link>
           )}

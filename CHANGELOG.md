@@ -2,6 +2,9 @@
 
 Versienummer staat in `package.json` ("version") en wordt rechtsonder getoond in beheer en zuil. Verhoog het bij elke uitrol (patch voor fixes, minor voor nieuwe functies).
 
+## 0.2.2 — 2026-11-02
+- Beheer: subtiele CoachWorkz-huisstijl (donkere zijbalk met logo, gouden accenten, Alegreya Sans koppen)
+
 ## 0.2.1 — 2026-11-02
 - Beheer: pagina Account (e-mailadres en wachtwoord van de beheerder wijzigen)
 

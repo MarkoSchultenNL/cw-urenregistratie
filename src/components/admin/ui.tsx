@@ -3,31 +3,31 @@ import type { ReactNode } from "react";
 export function PageTitle({ children, actions }: { children: ReactNode; actions?: ReactNode }) {
   return (
     <div className="mb-6 flex items-center justify-between gap-4">
-      <h1 className="text-2xl font-bold">{children}</h1>
+      <h1 className="font-cw text-3xl font-medium text-cw-dark">{children}</h1>
       {actions}
     </div>
   );
 }
 
 export function Card({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200 ${className}`}>{children}</section>;
+  return <section className={`rounded-md border-t-4 border-cw-accent bg-white p-6 shadow-sm ring-1 ring-cw-line ${className}`}>{children}</section>;
 }
 
 export function Btn({ children, variant = "primary", className = "", ...rest }: { children: ReactNode; variant?: "primary" | "secondary" | "danger"; className?: string } & React.ButtonHTMLAttributes<HTMLButtonElement>) {
   const v = {
-    primary: "bg-sky-600 text-white hover:bg-sky-700",
-    secondary: "bg-slate-100 text-slate-800 hover:bg-slate-200",
+    primary: "bg-cw-accent text-white hover:bg-cw-accent-dark",
+    secondary: "bg-white text-cw-dark ring-1 ring-cw-line hover:bg-cw-accent-soft",
     danger: "bg-rose-600 text-white hover:bg-rose-700",
   }[variant];
   return (
-    <button className={`rounded-lg px-3 py-1.5 text-sm font-semibold disabled:opacity-50 ${v} ${className}`} {...rest}>
+    <button className={`rounded-md px-3 py-1.5 text-sm font-semibold disabled:opacity-50 ${v} ${className}`} {...rest}>
       {children}
     </button>
   );
 }
 
 export function Notice({ kind, children }: { kind: "ok" | "error" | "info"; children: ReactNode }) {
-  const c = { ok: "bg-emerald-50 text-emerald-800 ring-emerald-200", error: "bg-rose-50 text-rose-800 ring-rose-200", info: "bg-sky-50 text-sky-800 ring-sky-200" }[kind];
+  const c = { ok: "bg-emerald-50 text-emerald-800 ring-emerald-200", error: "bg-rose-50 text-rose-800 ring-rose-200", info: "bg-cw-accent-soft text-cw-accent-dark ring-cw-accent/40" }[kind];
   return <div className={`mb-4 rounded-lg p-3 text-sm ring-1 ${c}`}>{children}</div>;
 }
 
