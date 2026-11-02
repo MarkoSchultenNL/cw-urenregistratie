@@ -5,7 +5,7 @@ import { and, eq } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db, schema } from "@/lib/db";
-import { getAdminSession, hashPin, newPairingCode } from "@/lib/auth";
+import { getAdminSession, hashPin, newDeviceKey, newPairingCode } from "@/lib/auth";
 import { getSettings, saveSettings, type Settings } from "@/lib/settings";
 import { retryPending, syncEmployees, syncEntry } from "@/lib/sync";
 import { syncProducts } from "@/lib/products-sync";
@@ -90,7 +90,7 @@ export async function syncEmployeesAction() {
 export async function createDevice(formData: FormData) {
   const { tenantId } = await requireSession();
   const name = String(formData.get("name") ?? "").trim() || "Zuil";
-  db.insert(schema.devices).values({ id: randomUUID(), tenantId, name, pairingCode: newPairingCode() }).run();
+  db.insert(schema.devices).values({ id: randomUUID(), tenantId, name, pairingCode: newPairingCode(), deviceKey: newDeviceKey() }).run();
   revalidatePath("/admin/zuilen");
 }
 
@@ -98,7 +98,7 @@ export async function regenerateCode(formData: FormData) {
   const { tenantId } = await requireSession();
   const id = String(formData.get("id"));
   db.update(schema.devices)
-    .set({ pairingCode: newPairingCode(), tokenHash: null, pairedAt: null })
+    .set({ pairingCode: newPairingCode(), tokenHash: null, pairedAt: null, deviceKey: newDeviceKey() })
     .where(and(eq(schema.devices.id, id), eq(schema.devices.tenantId, tenantId)))
     .run();
   revalidatePath("/admin/zuilen");

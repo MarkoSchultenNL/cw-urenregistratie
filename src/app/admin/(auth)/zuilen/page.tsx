@@ -21,7 +21,8 @@ export default async function DevicesPage() {
           <Btn>Zuil toevoegen</Btn>
         </form>
         <p className="mt-3 text-sm text-slate-500">
-          Open op de zuil <code className="rounded bg-slate-100 px-1">{appUrl}/kiosk</code> in een browser in kioskmodus en voer de koppelcode in. De koppeling blijft bewaard in die browser.
+          <strong>Aanbevolen:</strong> zet de <em>zuil-URL</em> (met sleutel) hieronder in de snelkoppeling van de kioskbrowser. Dan koppelt de zuil zichzelf bij elke start, ook als de browser zijn gegevens wist. Alternatief: open{" "}
+          <code className="rounded bg-slate-100 px-1">{appUrl}/kiosk</code> en voer de koppelcode in (die koppeling leeft in een cookie).
         </p>
       </Card>
       <Card>
@@ -31,6 +32,7 @@ export default async function DevicesPage() {
               <th className="py-1">Naam</th>
               <th>Status</th>
               <th>Koppelcode</th>
+              <th>Zuil-URL</th>
               <th>Laatst gezien</th>
               <th></th>
             </tr>
@@ -41,6 +43,13 @@ export default async function DevicesPage() {
                 <td className="py-2 font-medium">{d.name}</td>
                 <td>{d.pairedAt ? <span className="text-emerald-700">gekoppeld</span> : <span className="text-amber-700">wacht op koppeling</span>}</td>
                 <td className="font-mono text-lg tracking-widest">{d.pairingCode ?? "—"}</td>
+                <td className="max-w-xs">
+                  {d.deviceKey ? (
+                    <input readOnly value={`${appUrl}/kiosk?k=${d.deviceKey}`} className="w-full rounded border border-slate-200 bg-slate-50 px-2 py-1 font-mono text-xs" onFocus={undefined} />
+                  ) : (
+                    <span className="text-xs text-slate-400">maak een nieuwe code voor een URL</span>
+                  )}
+                </td>
                 <td>{fmtDateTime(d.lastSeenAt)}</td>
                 <td className="text-right">
                   <div className="flex justify-end gap-2">
@@ -58,7 +67,7 @@ export default async function DevicesPage() {
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-4 text-slate-400">
+                <td colSpan={6} className="py-4 text-slate-400">
                   Nog geen zuilen.
                 </td>
               </tr>

@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { createHash, randomBytes } from "node:crypto";
@@ -88,14 +88,28 @@ export async function pairDevice(code: string): Promise<{ tenantId: string; devi
   return { tenantId: dev.tenantId, deviceId: dev.id };
 }
 
-export async function getDeviceSession(): Promise<{ tenantId: string; deviceId: string; name: string } | null> {
-  const raw = (await cookies()).get(DEVICE_COOKIE)?.value;
-  if (!raw) return null;
-  const [id, token] = raw.split(".");
-  if (!id || !token) return null;
-  const dev = db.select().from(schema.devices).where(eq(schema.devices.id, id)).get();
-  if (!dev || !dev.tokenHash || dev.tokenHash !== sha(token)) return null;
-  db.update(schema.devices).set({ lastSeenAt: new Date().toISOString() }).where(eq(schema.devices.id, id)).run();
+export function newDeviceKey() {
+  return randomBytes(24).toString("hex");
+}
+
+/** Zuil-sessie via vaste sleutel (?k= of X-Device-Key header) of via cookie. */
+export async function getDeviceSession(keyFromUrl?: string | null): Promise<{ tenantId: string; deviceId: string; name: string } | null> {
+  const hdr = (await headers()).get("x-device-key");
+  const key = keyFromUrl || hdr;
+  let dev: typeof schema.devices.$inferSelect | undefined;
+  if (key && /^[0-9a-f]{48}$/.test(key)) {
+    dev = db.select().from(schema.devices).where(eq(schema.devices.deviceKey, key)).get();
+  }
+  if (!dev) {
+    const raw = (await cookies()).get(DEVICE_COOKIE)?.value;
+    if (!raw) return null;
+    const [id, token] = raw.split(".");
+    if (!id || !token) return null;
+    const d = db.select().from(schema.devices).where(eq(schema.devices.id, id)).get();
+    if (!d || !d.tokenHash || d.tokenHash !== sha(token)) return null;
+    dev = d;
+  }
+  db.update(schema.devices).set({ lastSeenAt: new Date().toISOString(), pairedAt: dev.pairedAt ?? new Date().toISOString() }).where(eq(schema.devices.id, dev.id)).run();
   return { tenantId: dev.tenantId, deviceId: dev.id, name: dev.name };
 }
 

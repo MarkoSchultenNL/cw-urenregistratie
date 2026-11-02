@@ -53,6 +53,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </form>
       </aside>
       <main className="flex-1 p-8">{children}</main>
+      <span className="pointer-events-none fixed bottom-1 right-2 text-xs text-slate-400 select-none">v{process.env.NEXT_PUBLIC_APP_VERSION ?? "dev"}</span>
     </div>
   );
 }

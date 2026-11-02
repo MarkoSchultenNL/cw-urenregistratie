@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BigButton, ErrorBox, Header, Keypad, OnScreenKeyboard, Spinner, Tile, fmtHM, fmtMinutes } from "./ui";
+import { ActionBar, BigButton, ErrorBox, Header, Keypad, OnScreenKeyboard, Spinner, Tile, VersionTag, fmtHM, fmtMinutes } from "./ui";
 import QrCode from "./QrCode";
 
 type Employee = { id: string; firstName: string; lastName: string; hasPin: boolean; uploadUrl: string | null; minutesToday: number; minutesWeek: number };
@@ -12,14 +12,20 @@ type Material = { productId: string; name: string; code: string | null; quantity
 
 type Step = "employees" | "pin" | "project" | "task" | "hours" | "description" | "materials" | "photos" | "confirm" | "result";
 
+/** Vaste zuilsleutel uit de URL (?k=) meesturen, zodat de zuil ook zonder cookie werkt. */
+function deviceKeyHeader(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  const k = new URLSearchParams(window.location.search).get("k");
+  return k ? { "X-Device-Key": k } : {};
+}
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const r = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }, cache: "no-store" });
+  const r = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...deviceKeyHeader(), ...(init?.headers ?? {}) }, cache: "no-store" });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error((j as { error?: string }).error ?? `Fout ${r.status}`);
   return j as T;
 }
 
-export default function Kiosk({ deviceName }: { deviceName: string }) {
+export default function Kiosk({ deviceName }: { deviceName: string; deviceKey: string | null }) {
   const [boot, setBoot] = useState<{ employees: Employee[]; settings: Settings } | null>(null);
   const [bootError, setBootError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("employees");
@@ -95,12 +101,6 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
     };
   }, [step, boot, reset]);
 
-  // Resultaatscherm: na 6 s terug
-  useEffect(() => {
-    if (step !== "result" || result?.status !== "synced") return;
-    const t = setTimeout(reset, 6000);
-    return () => clearTimeout(t);
-  }, [step, result, reset]);
 
   /* ---------- Handlers ---------- */
 
@@ -262,9 +262,11 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
   const changeQty = (productId: string, delta: number) =>
     setMaterials((ms) => ms.map((m) => (m.productId === productId ? { ...m, quantity: m.quantity + delta } : m)).filter((m) => m.quantity > 0));
 
-  const confirm = async () => {
+  const [moreAfter, setMoreAfter] = useState(false);
+  const confirm = async (more = false) => {
     if (!employee || !project || !task || busy) return;
     setBusy(true);
+    setMoreAfter(more);
     try {
       const r = await api<{ status: "synced" | "error"; error?: string }>("/api/kiosk/entries", {
         method: "POST",
@@ -286,9 +288,34 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
     }
   };
 
+  /** Nog een boeking voor dezelfde medewerker: formulier leeg, terug naar projectkeuze (geen pincode nodig). */
+  const bookMore = useCallback(() => {
+    setProject(null);
+    setTasks(null);
+    setTask(null);
+    setMinutes(0);
+    setDescription("");
+    setMaterials([]);
+    setProductSearch("");
+    setSearchOpen(false);
+    setShowQr(false);
+    setResult(null);
+    setMoreAfter(false);
+    setStep("project");
+    loadProjects();
+    loadBoot();
+  }, [loadProjects, loadBoot]);
+
+  // Resultaatscherm: na enkele seconden terug (of door naar projectkeuze bij "nog meer uren")
+  useEffect(() => {
+    if (step !== "result" || result?.status !== "synced") return;
+    const t = setTimeout(moreAfter ? bookMore : reset, moreAfter ? 2500 : 6000);
+    return () => clearTimeout(t);
+  }, [step, result, reset, moreAfter, bookMore]);
+
   useEffect(() => {
     afterDescriptionRef.current = afterDescription;
-    confirmRef.current = confirm;
+    confirmRef.current = () => confirm(false);
   });
 
   const filteredProducts = useMemo(() => {
@@ -308,7 +335,8 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
   const fullName = employee ? `${employee.firstName} ${employee.lastName}` : "";
 
   return (
-    <div className="flex h-full flex-col bg-cw-bg select-none">
+    <div className="relative flex h-full flex-col bg-cw-bg select-none">
+      <VersionTag />
       {step === "employees" && (
         <>
           <Header title="Wie ben je?" subtitle={`Tik op je naam · ${deviceName}`} />
@@ -422,10 +450,15 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                 </button>
               ))}
             </div>
-            <BigButton onClick={() => setStep("description")} disabled={minutes === 0} className="w-full max-w-md">
+          </main>
+          <ActionBar>
+            <BigButton variant="secondary" onClick={() => setStep("task")}>
+              ‹ Terug
+            </BigButton>
+            <BigButton onClick={() => setStep("description")} disabled={minutes === 0} className="min-w-64">
               Verder ›
             </BigButton>
-          </main>
+          </ActionBar>
         </>
       )}
 
@@ -443,25 +476,21 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               readOnly
             />
             <OnScreenKeyboard value={description} onChange={setDescription} />
-            <BigButton onClick={afterDescription} disabled={s.descriptionRequired && !description.trim()} className="mt-auto w-full">
-              Verder ›
-            </BigButton>
           </main>
+          <ActionBar>
+            <BigButton variant="secondary" onClick={() => setStep("hours")}>
+              ‹ Terug
+            </BigButton>
+            <BigButton onClick={afterDescription} disabled={s.descriptionRequired && !description.trim()} className="min-w-64">
+              {description.trim() ? "Verder ›" : "Overslaan ›"}
+            </BigButton>
+          </ActionBar>
         </>
       )}
 
       {step === "materials" && (
         <>
-          <Header
-            title="Materiaal gebruikt?"
-            subtitle="Tik op een artikel om toe te voegen"
-            onBack={() => setStep("description")}
-            right={
-              <BigButton onClick={goBeforeConfirm} className="shrink-0">
-                {materials.length ? "Verder ›" : "Geen materiaal ›"}
-              </BigButton>
-            }
-          />
+          <Header title="Materiaal gebruikt?" subtitle="Tik op een artikel om toe te voegen" onBack={() => setStep("description")} />
           <main className="flex flex-1 flex-col gap-4 overflow-hidden p-6 @5xl:flex-row">
             <div className="flex flex-1 flex-col gap-3 overflow-hidden">
               <div className="flex gap-2">
@@ -523,6 +552,14 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               </div>
             </aside>
           </main>
+          <ActionBar>
+            <BigButton variant="secondary" onClick={() => setStep("description")}>
+              ‹ Terug
+            </BigButton>
+            <BigButton onClick={goBeforeConfirm} className="min-w-64">
+              {materials.length ? "Verder ›" : "Geen materiaal ›"}
+            </BigButton>
+          </ActionBar>
         </>
       )}
 
@@ -533,14 +570,9 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
             {!showQr ? (
               <>
                 <p className="max-w-xl text-center text-2xl text-cw-dark">Wil je foto&apos;s van je werk toevoegen? Dat kan met je telefoon.</p>
-                <div className="flex w-full max-w-2xl gap-4">
-                  <BigButton variant="secondary" onClick={() => setStep("confirm")} className="flex-1">
-                    Nee, verder
-                  </BigButton>
-                  <BigButton onClick={() => setShowQr(true)} className="flex-1">
-                    Ja, toon QR-code
-                  </BigButton>
-                </div>
+                <BigButton onClick={() => setShowQr(true)} className="w-full max-w-md">
+                  Ja, toon QR-code
+                </BigButton>
               </>
             ) : (
               <>
@@ -548,12 +580,17 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                 <div className="rounded-md border-t-4 border-cw-accent bg-white p-6 shadow ring-1 ring-cw-line">
                   <QrCode value={employee.uploadUrl} size={320} />
                 </div>
-                <BigButton onClick={() => setStep("confirm")} className="w-full max-w-md">
-                  Klaar, verder ›
-                </BigButton>
               </>
             )}
           </main>
+          <ActionBar>
+            <BigButton variant="secondary" onClick={() => setStep(s.materialsEnabled ? "materials" : "description")}>
+              ‹ Terug
+            </BigButton>
+            <BigButton onClick={() => setStep("confirm")} className="min-w-64">
+              {showQr ? "Klaar, verder ›" : "Nee, verder ›"}
+            </BigButton>
+          </ActionBar>
         </>
       )}
 
@@ -591,19 +628,24 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                 </>
               )}
             </dl>
-            <div className="flex w-full max-w-2xl gap-4">
-              <BigButton variant="secondary" onClick={reset} className="flex-1">
-                Annuleren
-              </BigButton>
-              <BigButton variant="success" onClick={confirm} disabled={busy} className="flex-[2]">
-                {busy ? "Bezig…" : "✓ Bevestigen"}
-              </BigButton>
-            </div>
           </main>
+          <ActionBar>
+            <BigButton variant="secondary" onClick={reset} className="mr-auto">
+              Annuleren
+            </BigButton>
+            <BigButton variant="primary" onClick={() => confirm(true)} disabled={busy}>
+              ✓ Bevestigen + nog meer uren
+            </BigButton>
+            <BigButton variant="success" onClick={() => confirm(false)} disabled={busy} className="min-w-64">
+              {busy ? "Bezig…" : "✓ Bevestigen"}
+            </BigButton>
+          </ActionBar>
         </>
       )}
 
       {step === "result" && result && (
+        <>
+        <Header title={result.status === "synced" ? "Geboekt" : "Opgeslagen"} subtitle={fullName} />
         <main className={`flex flex-1 flex-col items-center justify-center gap-6 p-8 text-center ${result.status === "synced" ? "bg-emerald-50" : "bg-amber-50"}`}>
           {result.status === "synced" ? (
             <>
@@ -612,7 +654,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               <p className="text-2xl text-emerald-700">
                 {fmtMinutes(minutes)} op {task?.title}
               </p>
-              <p className="text-lg text-emerald-700">Dit scherm sluit vanzelf.</p>
+              <p className="text-lg text-emerald-700">{moreAfter ? "Je gaat zo door naar de projectkeuze…" : "Dit scherm sluit vanzelf."}</p>
             </>
           ) : (
             <>
@@ -622,10 +664,16 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               <p className="max-w-2xl break-words text-base text-amber-600">{result.error}</p>
             </>
           )}
-          <BigButton onClick={reset} className="mt-4 w-full max-w-md">
+        </main>
+        <ActionBar>
+          <BigButton variant="secondary" onClick={bookMore} className="mr-auto">
+            Nog meer uren schrijven
+          </BigButton>
+          <BigButton onClick={reset} className="min-w-64">
             Klaar
           </BigButton>
-        </main>
+        </ActionBar>
+        </>
       )}
     </div>
   );

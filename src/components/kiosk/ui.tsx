@@ -83,7 +83,7 @@ export function Header({ title, subtitle, onBack, right }: { title: string; subt
       </div>
       {right}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/coachworkz-logo.png" alt="CoachWorkz" className="ml-2 hidden h-14 w-auto shrink-0 @3xl:block" />
+      <img src="/coachworkz-logo.png" alt="CoachWorkz" className="ml-2 h-12 w-auto shrink-0 @3xl:h-14" />
     </header>
   );
 }
@@ -194,4 +194,18 @@ export function fmtMinutes(m: number) {
 /** Compacte notatie u:mm, bv. 2:15 */
 export function fmtHM(m: number) {
   return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
+}
+
+/** Vaste actiebalk onderaan elk invoerscherm: altijd dezelfde plek voor Terug/Verder. */
+export function ActionBar({ children }: { children: ReactNode }) {
+  return <footer className="flex shrink-0 items-center justify-end gap-4 border-t border-cw-line bg-white px-6 py-4">{children}</footer>;
+}
+
+/** Klein versienummer rechtsonder. */
+export function VersionTag() {
+  return (
+    <span className="pointer-events-none absolute bottom-1 right-2 text-xs text-cw-muted/80 select-none">
+      v{process.env.NEXT_PUBLIC_APP_VERSION ?? "dev"}
+    </span>
+  );
 }

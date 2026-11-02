@@ -5,9 +5,10 @@ import PairScreen from "@/components/kiosk/PairScreen";
 
 export const dynamic = "force-dynamic";
 
-export default async function KioskPage() {
+export default async function KioskPage({ searchParams }: { searchParams: Promise<{ k?: string }> }) {
   await ensureBootstrapped();
-  const dev = await getDeviceSession();
+  const { k } = await searchParams;
+  const dev = await getDeviceSession(k ?? null);
   if (!dev) return <PairScreen />;
-  return <Kiosk deviceName={dev.name} />;
+  return <Kiosk deviceName={dev.name} deviceKey={k ?? null} />;
 }

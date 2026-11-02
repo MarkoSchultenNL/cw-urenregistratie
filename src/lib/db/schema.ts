@@ -70,6 +70,8 @@ export const devices = sqliteTable("devices", {
   name: text("name").notNull(),
   pairingCode: text("pairing_code"),
   tokenHash: text("token_hash"),
+  /** Vaste sleutel voor de zuil-URL (/kiosk?k=...), zodat de koppeling een browser-reset overleeft */
+  deviceKey: text("device_key"),
   pairedAt: text("paired_at"),
   lastSeenAt: text("last_seen_at"),
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
