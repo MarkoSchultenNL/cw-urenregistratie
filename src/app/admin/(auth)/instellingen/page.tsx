@@ -38,7 +38,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <label className="block text-sm">
               Schermschaal zuil
               <input type="number" name="kioskScale" min={0} max={400} step={5} defaultValue={s.kioskScale} className="ml-2 w-20 rounded-lg border border-slate-300 px-2 py-1" /> %
-              <span className="ml-2 text-slate-500">(0 = automatisch: 1280 px breed = 100%, breder scherm schaalt mee; bijv. 150 voor anderhalf keer zo groot)</span>
+              <span className="ml-2 text-slate-500">(0 = automatisch: liggend scherm 1280 px = 100%, staand scherm 720 px = 100%, grotere schermen schalen mee; bijv. 150 voor anderhalf keer zo groot)</span>
             </label>
             <label className="block text-sm">
               Terug naar startscherm na

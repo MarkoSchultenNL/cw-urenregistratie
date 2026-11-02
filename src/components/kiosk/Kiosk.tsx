@@ -312,7 +312,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
       {step === "employees" && (
         <>
           <Header title="Wie ben je?" subtitle={`Tik op je naam · ${deviceName}`} />
-          <main className="grid flex-1 auto-rows-min grid-cols-2 gap-4 overflow-y-auto p-6 md:grid-cols-3 lg:grid-cols-4">
+          <main className="grid flex-1 auto-rows-min grid-cols-2 gap-4 overflow-y-auto p-6 @3xl:grid-cols-3 @5xl:grid-cols-4">
             {boot.employees.length === 0 && <p className="col-span-full text-xl text-cw-muted">Er zijn nog geen medewerkers zichtbaar. Vraag de beheerder.</p>}
             {boot.employees.map((e) => (
               <Tile key={e.id} onClick={() => chooseEmployee(e)}>
@@ -359,7 +359,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
             ) : projects.length === 0 ? (
               <p className="text-xl text-cw-muted">Geen open projecten gevonden in Teamleader.</p>
             ) : (
-              <div className="grid auto-rows-min grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid auto-rows-min grid-cols-1 gap-4 @3xl:grid-cols-2 @5xl:grid-cols-3">
                 {projects.map((p) => (
                   <Tile key={p.id} onClick={() => chooseProject(p)}>
                     {p.project_key != null && <span className="mr-2 text-lg font-normal text-cw-muted">#{p.project_key}</span>}
@@ -383,7 +383,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
             ) : tasks.length === 0 ? (
               <p className="text-xl text-cw-muted">Dit project heeft geen open taken. Kies een ander project.</p>
             ) : (
-              <div className="grid auto-rows-min grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid auto-rows-min grid-cols-1 gap-4 @3xl:grid-cols-2 @5xl:grid-cols-3">
                 {tasks.map((t) => (
                   <Tile key={t.id} onClick={() => chooseTask(t)}>
                     {t.title}
@@ -462,7 +462,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               </BigButton>
             }
           />
-          <main className="flex flex-1 gap-4 overflow-hidden p-6">
+          <main className="flex flex-1 flex-col gap-4 overflow-hidden p-6 @5xl:flex-row">
             <div className="flex flex-1 flex-col gap-3 overflow-hidden">
               <div className="flex gap-2">
                 <button
@@ -483,7 +483,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               ) : !products ? (
                 <Spinner text="Artikelen ophalen…" />
               ) : (
-                <div className="grid auto-rows-min grid-cols-1 gap-3 overflow-y-auto md:grid-cols-2">
+                <div className="grid auto-rows-min grid-cols-1 gap-3 overflow-y-auto @3xl:grid-cols-2">
                   {filteredProducts.map((p) => (
                     <Tile key={p.id} onClick={() => addMaterial(p)} className="min-h-16 text-xl">
                       {p.name}
@@ -502,11 +502,12 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                 </div>
               )}
             </div>
-            <aside className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto rounded-md bg-white p-4 ring-1 ring-cw-line">
+            <aside className="flex max-h-72 w-full shrink-0 flex-col gap-3 overflow-y-auto rounded-md bg-white p-4 ring-1 ring-cw-line @5xl:max-h-none @5xl:w-80">
               <h2 className="text-xl font-bold uppercase tracking-wide text-cw-dark">Gekozen</h2>
               {materials.length === 0 && <p className="text-cw-muted">Nog niets gekozen.</p>}
+              <div className="flex flex-wrap gap-3 @5xl:flex-col">
               {materials.map((m) => (
-                <div key={m.productId} className="rounded-md bg-cw-bg p-3">
+                <div key={m.productId} className="min-w-56 flex-1 rounded-md bg-cw-bg p-3 @5xl:flex-none">
                   <p className="text-lg font-semibold leading-tight">{m.name}</p>
                   <div className="mt-2 flex items-center gap-2">
                     <button type="button" onClick={() => changeQty(m.productId, -1)} className="h-12 w-12 rounded-md bg-cw-dark text-2xl font-bold text-white active:scale-95">
@@ -519,6 +520,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                   </div>
                 </div>
               ))}
+              </div>
             </aside>
           </main>
         </>

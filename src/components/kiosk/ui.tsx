@@ -83,7 +83,7 @@ export function Header({ title, subtitle, onBack, right }: { title: string; subt
       </div>
       {right}
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/coachworkz-logo.png" alt="CoachWorkz" className="ml-2 hidden h-14 w-auto shrink-0 md:block" />
+      <img src="/coachworkz-logo.png" alt="CoachWorkz" className="ml-2 hidden h-14 w-auto shrink-0 @3xl:block" />
     </header>
   );
 }
