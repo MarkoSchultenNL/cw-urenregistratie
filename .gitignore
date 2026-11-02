@@ -42,3 +42,5 @@ next-env.d.ts
 
 # database
 /data/
+
+/_to_delete/
