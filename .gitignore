@@ -44,3 +44,5 @@ next-env.d.ts
 /data/
 
 /_to_delete/
+
+/_server-setup.log
