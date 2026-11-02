@@ -3,7 +3,13 @@
 # Draai als root:  bash setup-server.sh uren-staging.jouwdomein.nl
 set -euo pipefail
 
-DOMAIN="${1:?Gebruik: setup-server.sh <domein>}"
+DOMAIN="${1:?Gebruik: setup-server.sh <domein-of-ip>}"
+# Kaal IP-adres → geen certificaat mogelijk, dan plain http.
+if [[ "$DOMAIN" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+  SITE="http://$DOMAIN"; APP_URL="http://$DOMAIN"
+else
+  SITE="$DOMAIN"; APP_URL="https://$DOMAIN"
+fi
 REPO="https://github.com/MarkoSchultenNL/cw-urenregistratie.git"
 DIR=/opt/cw-urenregistratie
 DEPLOY_USER=deploy
@@ -28,13 +34,13 @@ if [ ! -f $DIR/.env ]; then
   SECRET=$(openssl rand -hex 32)
   ADMIN_PW=$(openssl rand -base64 12 | tr -d '=+/' | cut -c1-14)
   cat > $DIR/.env <<EOF
-APP_URL=https://$DOMAIN
-DOMAIN=$DOMAIN
+APP_URL=$APP_URL
+DOMAIN=$SITE
 SESSION_SECRET=$SECRET
 DATABASE_PATH=/data/cw.sqlite
 TENANT_NAME=Staging
 
-ADMIN_EMAIL=admin@$DOMAIN
+ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=$ADMIN_PW
 
 TEAMLEADER_CLIENT_ID=
@@ -43,7 +49,7 @@ TEAMLEADER_MOCK=1
 EOF
   chown $DEPLOY_USER:$DEPLOY_USER $DIR/.env
   chmod 600 $DIR/.env
-  echo "   Admin-login: admin@$DOMAIN / $ADMIN_PW   (staat in $DIR/.env)"
+  echo "   Admin-login: admin@example.com / $ADMIN_PW   (staat in $DIR/.env)"
 fi
 
 echo "== SSH-sleutel voor GitHub Actions"
@@ -72,6 +78,6 @@ $(cat /home/$DEPLOY_USER/.ssh/github-actions)
 ------------------------------------------------------------------------
 
 Daarna deployt elke push naar main automatisch.
-App: https://$DOMAIN/admin   (certificaat komt vanzelf zodra DNS klopt)
+App: $APP_URL/admin   (bij een domein komt het certificaat vanzelf zodra DNS klopt)
 ========================================================================
 EOF

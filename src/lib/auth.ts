@@ -13,6 +13,8 @@ const secret = () => {
 
 const ADMIN_COOKIE = "cw_admin";
 const DEVICE_COOKIE = "cw_device";
+/** Secure-cookies alleen als de app via https draait (staging op een kaal IP draait op http). */
+const SECURE = (process.env.APP_URL ?? "").startsWith("https://");
 
 /* ---------- Admin ---------- */
 
@@ -25,7 +27,7 @@ export async function createAdminSession(adminId: string, tenantId: string) {
   (await cookies()).set(ADMIN_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: SECURE,
     path: "/",
     maxAge: 12 * 3600,
   });
@@ -79,7 +81,7 @@ export async function pairDevice(code: string): Promise<{ tenantId: string; devi
   (await cookies()).set(DEVICE_COOKIE, `${dev.id}.${token}`, {
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: SECURE,
     path: "/",
     maxAge: 10 * 365 * 24 * 3600,
   });
