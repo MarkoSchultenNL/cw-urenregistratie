@@ -109,7 +109,22 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
     setPin("");
     setPinError(null);
     setStep("pin");
+    // Actuele gegevens ophalen (upload-link, uren) voor het geval het beheer net iets wijzigde
+    api<{ employees: Employee[]; settings: Settings }>("/api/kiosk/bootstrap")
+      .then((b) => {
+        setBoot(b);
+        const fresh = b.employees.find((x) => x.id === e.id);
+        if (fresh) setEmployee(fresh);
+      })
+      .catch(() => {});
   };
+
+  // Startscherm elke minuut verversen (uren, nieuwe medewerkers, instellingen)
+  useEffect(() => {
+    if (step !== "employees") return;
+    const t = setInterval(loadBoot, 60_000);
+    return () => clearInterval(t);
+  }, [step, loadBoot]);
 
   const loadProjects = useCallback(() => {
     setLoadError(null);
