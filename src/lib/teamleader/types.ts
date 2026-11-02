@@ -26,7 +26,18 @@ export type TlProduct = {
   name: string;
   code: string | null;
   unitId: string | null;
+  updatedAt?: string | null;
 };
+
+export type TlCustomFieldDefinition = {
+  id: string;
+  context: string;
+  type: string;
+  label: string;
+  options?: { id: string; value: string }[];
+};
+
+export type TlCustomFieldValue = { definitionId: string; value: unknown };
 
 export type TlMe = {
   id: string;

@@ -6,8 +6,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { db, schema } from "@/lib/db";
 import { getAdminSession, hashPin, newPairingCode } from "@/lib/auth";
-import { saveSettings, type Settings } from "@/lib/settings";
+import { getSettings, saveSettings, type Settings } from "@/lib/settings";
 import { retryPending, syncEmployees, syncEntry } from "@/lib/sync";
+import { syncProducts } from "@/lib/products-sync";
 import * as tl from "@/lib/teamleader/client";
 
 async function requireSession() {
@@ -122,8 +123,15 @@ export async function saveSettingsAction(formData: FormData) {
     idleResetSeconds: Math.max(20, Number(formData.get("idleResetSeconds") ?? 90)),
     stepMinutes: [5, 10, 15, 30, 60].includes(Number(formData.get("stepMinutes"))) ? Number(formData.get("stepMinutes")) : 15,
     maxHoursPerEntry: Math.min(24, Math.max(1, Number(formData.get("maxHoursPerEntry") ?? 12))),
+    productFilterField: String(formData.get("productFilterField") ?? "").trim(),
+    productFilterValue: String(formData.get("productFilterValue") ?? "").trim(),
   };
+  const before = getSettings(tenantId);
   saveSettings(tenantId, patch);
+  // Ander filterveld → artikelen opnieuw ophalen incl. custom field
+  if (before.productFilterField !== patch.productFilterField) {
+    syncProducts(tenantId, { full: true }).catch((e) => console.error("[products-sync]", e));
+  }
   revalidatePath("/admin/instellingen");
   redirect("/admin/instellingen?ok=1");
 }
@@ -162,6 +170,18 @@ export async function disconnectTeamleader() {
   db.delete(schema.teamleaderConnections).where(eq(schema.teamleaderConnections.tenantId, tenantId)).run();
   tl.clearCache(tenantId);
   revalidatePath("/admin/teamleader");
+}
+
+export async function syncProductsAction() {
+  const { tenantId } = await requireSession();
+  try {
+    const r = await syncProducts(tenantId, { full: true });
+    revalidatePath("/admin/teamleader");
+    redirect(`/admin/teamleader?ok=products&n=${r.total}&f=${r.filterFieldFound ? 1 : 0}`);
+  } catch (e) {
+    if ((e as { digest?: string }).digest?.startsWith("NEXT_REDIRECT")) throw e;
+    redirect("/admin/teamleader?error=" + encodeURIComponent((e as Error).message));
+  }
 }
 
 export async function clearCacheAction() {

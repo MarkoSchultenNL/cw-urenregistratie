@@ -1,4 +1,4 @@
-import type { TlMe, TlProduct, TlProject, TlTask, TlUser } from "./types";
+import type { TlCustomFieldDefinition, TlCustomFieldValue, TlMe, TlProduct, TlProject, TlTask, TlUser } from "./types";
 
 /** Nepdata om de zuil en het beheer te testen zonder Teamleader-koppeling (TEAMLEADER_MOCK=1). */
 const users: TlUser[] = [
@@ -36,7 +36,11 @@ const products: TlProduct[] = [
   { id: "a-5", name: "Primer 5L", code: "PRIM-5", unitId: null },
   { id: "a-6", name: "Slijpschijf 125mm", code: "SLIJP-125", unitId: null },
   { id: "a-7", name: "Tape 50mm", code: "TAPE-50", unitId: null },
+  { id: "a-8", name: "Kantoorpapier A4", code: "PAP-A4", unitId: null },
+  { id: "a-9", name: "Koffiebonen 1kg", code: "KOF-1", unitId: null },
 ];
+// Custom field "Bedrijfsentiteit" (single_select) per artikel
+const entity: Record<string, string> = { "a-1": "Coachworkz", "a-2": "Coachworkz", "a-3": "Classic Plaza", "a-4": "Coachworkz", "a-5": "Coachworkz", "a-6": "Coachworkz", "a-7": "Coachworkz", "a-8": "Holding", "a-9": "Holding" };
 
 let counter = 1;
 export const mockApi = {
@@ -50,7 +54,12 @@ export const mockApi = {
   users: async () => users,
   projects: async () => projects,
   tasks: async (projectId: string) => tasks.filter((t) => t.projectId === projectId),
-  products: async () => products,
+  products: async (_updatedSince?: string) => products,
+  productCustomFields: async (id: string): Promise<TlCustomFieldValue[]> => (entity[id] ? [{ definitionId: "cfd-entiteit", value: entity[id] }] : []),
+  customFieldDefinitions: async (context: string): Promise<TlCustomFieldDefinition[]> =>
+    context === "product"
+      ? [{ id: "cfd-entiteit", context: "product", type: "single_select", label: "Bedrijfsentiteit", options: [{ id: "o1", value: "Coachworkz" }, { id: "o2", value: "Classic Plaza" }, { id: "o3", value: "Holding" }] }]
+      : [],
   addTime: async (input: unknown) => {
     console.log("[mock] timeTracking.add", JSON.stringify(input));
     return `mock-tt-${counter++}`;

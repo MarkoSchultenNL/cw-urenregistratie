@@ -18,6 +18,7 @@ Stack: Next.js 16 · TypeScript · Drizzle ORM · SQLite · Docker + Caddy. Het 
 - De beheerder koppelt **één** Teamleader-account (OAuth2). De zuil boekt namens medewerkers via `timeTracking.add` met `user_id`; medewerkers hoeven zelf niet in te loggen bij Teamleader.
 - Projecten en taken komen uit de nieuwe projectmodule (`projects-v2`). Uren worden geboekt op een **taak** (`subject.type = nextgenTask`).
 - Verbruiksmateriaal komt uit de artikelenlijst (`products.list`) en wordt als materiaalregel op het **project** gezet (`projects-v2/materials.create`). In het beheer zie je welk materiaal bij welke boeking hoort.
+- **Artikelfilter**: in *Beheer → Instellingen* kun je een custom field op artikelen (bijv. "Bedrijfsentiteit") en een waarde (bijv. "Coachworkz") opgeven; de zuil toont dan alleen die artikelen. Omdat `products.list` geen custom fields meegeeft, houdt de app een lokale artikelcache bij (incrementeel via `updated_since`, per gewijzigd artikel één `products.info`). Status en handmatige sync onder *Beheer → Teamleader*.
 - Datum is altijd vandaag. Of Teamleader "uren per dag" of "met starttijd" verwacht wordt bij de eerste boeking automatisch bepaald en onthouden.
 - Mislukt het doorsturen (geen netwerk, token verlopen), dan blijft de boeking lokaal bewaard; de beheerder stuurt hem opnieuw vanuit *Boekingen*.
 - Let op `historic_time_tracking_limit` in Teamleader: ouder dan die grens kan niet meer worden teruggeboekt.

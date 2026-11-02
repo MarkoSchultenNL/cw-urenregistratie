@@ -1,6 +1,6 @@
 import { withDevice } from "@/lib/kiosk-api";
-import * as tl from "@/lib/teamleader/client";
+import { kioskProducts } from "@/lib/products-sync";
 
 export async function GET() {
-  return withDevice(async ({ tenantId }) => ({ products: await tl.listProducts(tenantId) }));
+  return withDevice(async ({ tenantId }) => ({ products: await kioskProducts(tenantId) }));
 }

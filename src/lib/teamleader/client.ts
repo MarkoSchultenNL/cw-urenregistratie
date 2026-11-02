@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { getValidAccessToken } from "./oauth";
 import { NotConnectedError, TeamleaderError } from "./types";
-import type { TlMe, TlProduct, TlProject, TlTask, TlUser } from "./types";
+import type { TlCustomFieldDefinition, TlCustomFieldValue, TlMe, TlProduct, TlProject, TlTask, TlUser } from "./types";
 import { mockApi } from "./mock";
 
 const API_BASE = "https://api.focus.teamleader.eu";
@@ -132,14 +132,30 @@ export function listTasks(tenantId: string, projectId: string): Promise<TlTask[]
   });
 }
 
-export function listProducts(tenantId: string): Promise<TlProduct[]> {
-  return cached(`${tenantId}:products`, 5 * 60_000, async () => {
-    if (isMock()) return mockApi.products();
-    type Row = { id: string; name: string | null; code: string | null; unit: { id: string } | null };
-    const rows = await listAll<Row>(tenantId, "products.list", {});
-    return rows
-      .map((p) => ({ id: p.id, name: p.name ?? p.code ?? "(naamloos)", code: p.code, unitId: p.unit?.id ?? null }))
-      .sort((a, b) => a.name.localeCompare(b.name, "nl"));
+/** Alle artikelen (optioneel alleen gewijzigd sinds), zonder custom fields. */
+export async function listProducts(tenantId: string, updatedSince?: string): Promise<TlProduct[]> {
+  if (isMock()) return mockApi.products(updatedSince);
+  type Row = { id: string; name: string | null; code: string | null; unit: { id: string } | null; updated_at?: string };
+  const filter: Record<string, unknown> = {};
+  if (updatedSince) filter.updated_since = updatedSince;
+  const rows = await listAll<Row>(tenantId, "products.list", { filter });
+  return rows.map((p) => ({ id: p.id, name: p.name ?? p.code ?? "(naamloos)", code: p.code, unitId: p.unit?.id ?? null, updatedAt: p.updated_at ?? null }));
+}
+
+/** Custom-field-waarden van één artikel (alleen via products.info beschikbaar). */
+export async function productCustomFields(tenantId: string, productId: string): Promise<TlCustomFieldValue[]> {
+  if (isMock()) return mockApi.productCustomFields(productId);
+  type R = { data: { custom_fields?: { definition: { id: string }; value: unknown }[] } };
+  const r = await call<R>(tenantId, "products.info", { id: productId });
+  return (r.data.custom_fields ?? []).map((c) => ({ definitionId: c.definition.id, value: c.value }));
+}
+
+export function customFieldDefinitions(tenantId: string, context: string): Promise<TlCustomFieldDefinition[]> {
+  return cached(`${tenantId}:cfd:${context}`, 10 * 60_000, async () => {
+    if (isMock()) return mockApi.customFieldDefinitions(context);
+    type Row = { id: string; context: string; type: string; label: string; configuration?: { options?: { id: string; value: string }[] } };
+    const rows = await listAll<Row>(tenantId, "customFieldDefinitions.list", { filter: { context } });
+    return rows.map((d) => ({ id: d.id, context: d.context, type: d.type, label: d.label, options: d.configuration?.options }));
   });
 }
 

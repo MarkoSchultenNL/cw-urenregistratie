@@ -12,6 +12,12 @@ export type Settings = {
   stepMinutes: number;
   maxHoursPerEntry: number;
   invoiceable: boolean;
+  /** Custom field (label) op artikelen waarop gefilterd wordt; leeg = alle artikelen */
+  productFilterField: string;
+  /** Vereiste waarde van dat veld (hoofdletterongevoelig) */
+  productFilterValue: string;
+  /** Laatste artikelsynchronisatie (ISO) */
+  productsSyncedAt: string;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -22,6 +28,9 @@ export const DEFAULT_SETTINGS: Settings = {
   stepMinutes: 15,
   maxHoursPerEntry: 12,
   invoiceable: true,
+  productFilterField: "",
+  productFilterValue: "",
+  productsSyncedAt: "",
 };
 
 export function getSettings(tenantId: string): Settings {

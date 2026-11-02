@@ -4,11 +4,15 @@ import { db, schema } from "@/lib/db";
 import { oauthConfig } from "@/lib/teamleader/oauth";
 import { isMock } from "@/lib/teamleader/client";
 import { Btn, Card, Notice, PageTitle, fmtDateTime } from "@/components/admin/ui";
-import { clearCacheAction, disconnectTeamleader } from "../actions";
+import { clearCacheAction, disconnectTeamleader, syncProductsAction } from "../actions";
+import { productStats } from "@/lib/products-sync";
+import { getSettings } from "@/lib/settings";
 
-export default async function TeamleaderPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+export default async function TeamleaderPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string; n?: string; f?: string }> }) {
   const { tenantId } = (await getAdminSession())!;
-  const { ok, error } = await searchParams;
+  const { ok, error, n, f } = await searchParams;
+  const ps = productStats(tenantId);
+  const st = getSettings(tenantId);
   const conn = db.select().from(schema.teamleaderConnections).where(eq(schema.teamleaderConnections.tenantId, tenantId)).get();
   const cfg = oauthConfig();
   const redirect = cfg?.redirectUri ?? `${process.env.APP_URL}/api/teamleader/callback`;
@@ -18,6 +22,11 @@ export default async function TeamleaderPage({ searchParams }: { searchParams: P
       <PageTitle>Teamleader Focus</PageTitle>
       {ok === "1" && <Notice kind="ok">Teamleader is gekoppeld en de medewerkers zijn opgehaald.</Notice>}
       {ok === "cache" && <Notice kind="ok">Cache geleegd; projecten, taken en artikelen worden opnieuw opgehaald.</Notice>}
+      {ok === "products" && (
+        <Notice kind={f === "0" ? "error" : "ok"}>
+          {n} artikelen gesynchroniseerd.{f === "0" && <> Let op: het custom field &quot;{st.productFilterField}&quot; is niet gevonden bij artikelen in Teamleader; controleer de spelling in Instellingen.</>}
+        </Notice>
+      )}
       {error === "config" && <Notice kind="error">TEAMLEADER_CLIENT_ID en TEAMLEADER_CLIENT_SECRET ontbreken in de omgeving.</Notice>}
       {error === "state" && <Notice kind="error">De koppeling is verlopen of ongeldig. Probeer opnieuw.</Notice>}
       {error && error !== "config" && error !== "state" && <Notice kind="error">{error}</Notice>}
@@ -68,6 +77,38 @@ export default async function TeamleaderPage({ searchParams }: { searchParams: P
             )}
           </>
         )}
+      </Card>
+
+      <Card className="mb-6 max-w-2xl text-sm">
+        <h2 className="mb-2 font-semibold">Artikelen (verbruiksmateriaal)</h2>
+        <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1">
+          <dt className="text-slate-500">In cache</dt>
+          <dd>{ps.total} artikelen</dd>
+          <dt className="text-slate-500">Zichtbaar op zuil</dt>
+          <dd>
+            {ps.matching}
+            {st.productFilterField ? (
+              <span className="text-slate-500">
+                {" "}
+                (filter: {st.productFilterField} = &quot;{st.productFilterValue || "—"}&quot;)
+              </span>
+            ) : (
+              <span className="text-slate-500"> (geen filter)</span>
+            )}
+          </dd>
+          <dt className="text-slate-500">Laatste synchronisatie</dt>
+          <dd>{ps.syncedAt ? fmtDateTime(ps.syncedAt) : "nog nooit"}</dd>
+          {st.productFilterField && ps.values.length > 0 && (
+            <>
+              <dt className="text-slate-500">Gevonden waarden</dt>
+              <dd>{ps.values.map((v) => `${v.v ?? "(leeg)"}: ${v.n}`).join(" · ")}</dd>
+            </>
+          )}
+        </dl>
+        <form action={syncProductsAction} className="mt-3">
+          <Btn variant="secondary">Artikelen nu synchroniseren</Btn>
+        </form>
+        <p className="mt-2 text-xs text-slate-500">De zuil ververst de artikelen automatisch elk half uur (alleen gewijzigde artikelen). Het filterveld stel je in bij Instellingen.</p>
       </Card>
 
       <Card className="max-w-2xl text-sm">

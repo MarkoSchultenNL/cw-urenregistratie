@@ -42,6 +42,19 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </label>
           </fieldset>
           <fieldset className="space-y-2">
+            <legend className="font-semibold">Artikelen (verbruiksmateriaal)</legend>
+            <p className="text-sm text-slate-600">Toon op de zuil alleen artikelen waarvan een custom field in Teamleader een bepaalde waarde heeft. Leeg laten = alle artikelen.</p>
+            <label className="block text-sm">
+              Custom field (label in Teamleader)
+              <input name="productFilterField" defaultValue={s.productFilterField} placeholder="bijv. Bedrijfsentiteit" className="ml-2 w-56 rounded-lg border border-slate-300 px-2 py-1" />
+            </label>
+            <label className="block text-sm">
+              Vereiste waarde
+              <input name="productFilterValue" defaultValue={s.productFilterValue} placeholder="bijv. Coachworkz" className="ml-2 w-56 rounded-lg border border-slate-300 px-2 py-1" />
+            </label>
+            <p className="text-xs text-slate-500">Na wijzigen van het veld worden de artikelen opnieuw opgehaald (zie Teamleader-pagina voor de stand).</p>
+          </fieldset>
+          <fieldset className="space-y-2">
             <legend className="font-semibold">Teamleader</legend>
             <label className="flex items-center gap-2">
               <input type="checkbox" name="invoiceable" defaultChecked={s.invoiceable} /> Uren als factureerbaar boeken

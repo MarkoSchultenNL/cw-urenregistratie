@@ -6,6 +6,7 @@ import { getAdminSession } from "@/lib/auth";
 import { exchangeCode } from "@/lib/teamleader/oauth";
 import * as tl from "@/lib/teamleader/client";
 import { syncEmployees } from "@/lib/sync";
+import { syncProducts } from "@/lib/products-sync";
 
 export async function GET(req: Request) {
   const session = await getAdminSession();
@@ -44,6 +45,7 @@ export async function GET(req: Request) {
       .run();
     await syncEmployees(session.tenantId);
     tl.clearCache(session.tenantId);
+    syncProducts(session.tenantId, { full: true }).catch((e) => console.error("[products-sync]", e));
     return NextResponse.redirect(new URL("/admin/teamleader?ok=1", base));
   } catch (e) {
     console.error("[oauth callback]", e);

@@ -117,6 +117,23 @@ export const materialUsages = sqliteTable("material_usages", {
   createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
 });
 
+/** Lokale cache van Teamleader-artikelen incl. de waarde van het filter-custom-field. */
+export const products = sqliteTable(
+  "products",
+  {
+    id: text("id").primaryKey(), // Teamleader product id
+    tenantId: text("tenant_id").notNull().references(() => tenants.id),
+    name: text("name").notNull(),
+    code: text("code"),
+    unitId: text("unit_id"),
+    /** Waarde van het ingestelde custom field (bv. Bedrijfsentiteit) */
+    filterValue: text("filter_value"),
+    tlUpdatedAt: text("tl_updated_at"),
+    syncedAt: text("synced_at").notNull().default(sql`(datetime('now'))`),
+  },
+  (t) => [index("products_tenant").on(t.tenantId)],
+);
+
 export type Employee = typeof employees.$inferSelect;
 export type TimeEntry = typeof timeEntries.$inferSelect;
 export type MaterialUsage = typeof materialUsages.$inferSelect;
