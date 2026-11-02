@@ -1,15 +1,16 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BigButton, ErrorBox, Header, Keypad, OnScreenKeyboard, Spinner, Tile, fmtHM, fmtMinutes } from "./ui";
+import QrCode from "./QrCode";
 
-type Employee = { id: string; firstName: string; lastName: string; hasPin: boolean; minutesToday: number; minutesWeek: number };
+type Employee = { id: string; firstName: string; lastName: string; hasPin: boolean; uploadUrl: string | null; minutesToday: number; minutesWeek: number };
 type Settings = { materialsEnabled: boolean; descriptionRequired: boolean; idleResetSeconds: number; stepMinutes: number; maxHoursPerEntry: number };
 type Project = { id: string; title: string; project_key?: number };
 type Task = { id: string; title: string; status: string; workTypeId: string | null };
 type Product = { id: string; name: string; code: string | null };
 type Material = { productId: string; name: string; code: string | null; quantity: number };
 
-type Step = "employees" | "pin" | "project" | "task" | "hours" | "description" | "materials" | "confirm" | "result";
+type Step = "employees" | "pin" | "project" | "task" | "hours" | "description" | "materials" | "photos" | "confirm" | "result";
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const r = await fetch(url, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }, cache: "no-store" });
@@ -41,6 +42,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
   const [products, setProducts] = useState<Product[] | null>(null);
   const [productSearch, setProductSearch] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [showQr, setShowQr] = useState(false);
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [result, setResult] = useState<{ status: "synced" | "error"; error?: string } | null>(null);
@@ -70,6 +72,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
     setMaterials([]);
     setProductSearch("");
     setSearchOpen(false);
+    setShowQr(false);
     setResult(null);
     setLoadError(null);
     loadBoot();
@@ -184,6 +187,9 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
         else if (k === "Enter" && minutes > 0) setStep("description");
         else return;
         e.preventDefault();
+      } else if (step === "photos" && k === "Enter") {
+        e.preventDefault();
+        setStep("confirm");
       } else if (step === "confirm" && k === "Enter") {
         e.preventDefault();
         confirmRef.current();
@@ -218,7 +224,12 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
     }
   };
 
-  const afterDescription = () => (boot?.settings.materialsEnabled ? goMaterials() : setStep("confirm"));
+  /** Na materiaal (of omschrijving): foto-vraag als de medewerker een upload-link heeft, anders bevestigen. */
+  const goBeforeConfirm = () => {
+    setShowQr(false);
+    setStep(employee?.uploadUrl ? "photos" : "confirm");
+  };
+  const afterDescription = () => (boot?.settings.materialsEnabled ? goMaterials() : goBeforeConfirm());
 
   const addMaterial = (p: Product) =>
     setMaterials((ms) => {
@@ -275,19 +286,19 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
   const fullName = employee ? `${employee.firstName} ${employee.lastName}` : "";
 
   return (
-    <div className="flex h-full flex-col bg-slate-50 select-none">
+    <div className="flex h-full flex-col bg-cw-bg select-none">
       {step === "employees" && (
         <>
           <Header title="Wie ben je?" subtitle={`Tik op je naam · ${deviceName}`} />
           <main className="grid flex-1 auto-rows-min grid-cols-2 gap-4 overflow-y-auto p-6 md:grid-cols-3 lg:grid-cols-4">
-            {boot.employees.length === 0 && <p className="col-span-full text-xl text-slate-500">Er zijn nog geen medewerkers zichtbaar. Vraag de beheerder.</p>}
+            {boot.employees.length === 0 && <p className="col-span-full text-xl text-cw-muted">Er zijn nog geen medewerkers zichtbaar. Vraag de beheerder.</p>}
             {boot.employees.map((e) => (
               <Tile key={e.id} onClick={() => chooseEmployee(e)}>
                 <span className="block text-3xl">{e.firstName}</span>
-                <span className="block text-xl font-normal text-slate-500">{e.lastName}</span>
-                <span className="mt-2 block text-base font-medium tabular-nums text-slate-500">
-                  <span className={e.minutesToday > 0 ? "text-sky-700" : ""}>Vandaag {fmtHM(e.minutesToday)}</span>
-                  <span className="mx-2 text-slate-300">·</span>
+                <span className="block text-xl font-normal text-cw-muted">{e.lastName}</span>
+                <span className="mt-2 block text-base font-medium tabular-nums text-cw-muted">
+                  <span className={e.minutesToday > 0 ? "text-cw-accent-dark" : ""}>Vandaag {fmtHM(e.minutesToday)}</span>
+                  <span className="mx-2 text-cw-line">·</span>
                   <span>Week {fmtHM(e.minutesWeek)}</span>
                 </span>
               </Tile>
@@ -302,7 +313,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
           <main className="flex flex-1 flex-col items-center justify-center gap-8 p-6">
             <div className="flex gap-4">
               {[0, 1, 2, 3].map((i) => (
-                <div key={i} className={`h-6 w-6 rounded-full ${pin.length > i ? "bg-sky-600" : "bg-slate-300"}`} />
+                <div key={i} className={`h-6 w-6 rounded-full ${pin.length > i ? "bg-cw-accent" : "bg-cw-line"}`} />
               ))}
             </div>
             {pinError && <p className="text-xl font-semibold text-rose-600">{pinError}</p>}
@@ -324,12 +335,12 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
             ) : !projects ? (
               <Spinner text="Projecten ophalen…" />
             ) : projects.length === 0 ? (
-              <p className="text-xl text-slate-500">Geen open projecten gevonden in Teamleader.</p>
+              <p className="text-xl text-cw-muted">Geen open projecten gevonden in Teamleader.</p>
             ) : (
               <div className="grid auto-rows-min grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {projects.map((p) => (
                   <Tile key={p.id} onClick={() => chooseProject(p)}>
-                    {p.project_key != null && <span className="mr-2 text-lg font-normal text-slate-400">#{p.project_key}</span>}
+                    {p.project_key != null && <span className="mr-2 text-lg font-normal text-cw-muted">#{p.project_key}</span>}
                     {p.title}
                   </Tile>
                 ))}
@@ -348,7 +359,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
             ) : !tasks ? (
               <Spinner text="Taken ophalen…" />
             ) : tasks.length === 0 ? (
-              <p className="text-xl text-slate-500">Dit project heeft geen open taken. Kies een ander project.</p>
+              <p className="text-xl text-cw-muted">Dit project heeft geen open taken. Kies een ander project.</p>
             ) : (
               <div className="grid auto-rows-min grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {tasks.map((t) => (
@@ -367,12 +378,12 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
         <>
           <Header title="Hoeveel uur?" subtitle={`${project?.title} › ${task.title}`} onBack={() => setStep("task")} />
           <main className="flex flex-1 flex-col items-center justify-center gap-8 p-6">
-            <div className="text-7xl font-black tabular-nums text-slate-900">{minutes === 0 ? "0 uur" : fmtMinutes(minutes)}</div>
+            <div className="text-7xl font-extrabold tabular-nums text-cw-dark">{minutes === 0 ? "0 uur" : fmtMinutes(minutes)}</div>
             <div className="flex items-center gap-4">
               <BigButton variant="secondary" onClick={() => setMinutes((m) => Math.max(0, m - step15))} className="w-32 text-4xl">
                 −
               </BigButton>
-              <span className="text-xl text-slate-500">{step15} min</span>
+              <span className="text-xl text-cw-muted">{step15} min</span>
               <BigButton variant="secondary" onClick={() => setMinutes((m) => Math.min(maxMin, m + step15))} className="w-32 text-4xl">
                 +
               </BigButton>
@@ -383,7 +394,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                   key={m}
                   type="button"
                   onClick={() => setMinutes(Math.min(maxMin, m))}
-                  className={`h-16 rounded-2xl px-6 text-2xl font-semibold ring-1 ring-slate-200 active:scale-95 ${minutes === m ? "bg-sky-600 text-white" : "bg-white text-slate-800"}`}
+                  className={`h-16 rounded-md px-6 text-2xl font-semibold ring-1 ring-cw-line active:scale-95 ${minutes === m ? "bg-cw-accent text-white" : "bg-white text-cw-dark"}`}
                 >
                   {fmtMinutes(m)}
                 </button>
@@ -405,7 +416,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Typ een korte omschrijving…"
-              className="w-full rounded-2xl border-2 border-slate-200 bg-white px-5 py-4 text-2xl focus:border-sky-500 focus:outline-none"
+              className="w-full rounded-md border-2 border-cw-line bg-white px-5 py-4 text-2xl focus:border-cw-accent focus:outline-none"
               inputMode="none"
               readOnly
             />
@@ -424,7 +435,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
             subtitle="Tik op een artikel om toe te voegen"
             onBack={() => setStep("description")}
             right={
-              <BigButton onClick={() => setStep("confirm")} className="shrink-0">
+              <BigButton onClick={goBeforeConfirm} className="shrink-0">
                 {materials.length ? "Verder ›" : "Geen materiaal ›"}
               </BigButton>
             }
@@ -435,12 +446,12 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                 <button
                   type="button"
                   onClick={() => setSearchOpen((o) => !o)}
-                  className={`flex-1 rounded-2xl border-2 bg-white px-5 py-3 text-left text-xl ${searchOpen ? "border-sky-500" : "border-slate-200"}`}
+                  className={`flex-1 rounded-md border-2 bg-white px-5 py-3 text-left text-xl ${searchOpen ? "border-cw-accent" : "border-cw-line"}`}
                 >
-                  {productSearch ? <span className="text-slate-900">{productSearch}</span> : <span className="text-slate-400">🔍 Zoek artikel…</span>}
+                  {productSearch ? <span className="text-cw-dark">{productSearch}</span> : <span className="text-cw-muted">🔍 Zoek artikel…</span>}
                 </button>
                 {productSearch && (
-                  <button type="button" onClick={() => setProductSearch("")} className="rounded-2xl bg-slate-200 px-5 text-xl font-semibold">
+                  <button type="button" onClick={() => setProductSearch("")} className="rounded-md bg-cw-dark px-5 text-xl font-semibold text-white">
                     ✕
                   </button>
                 )}
@@ -454,10 +465,10 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                   {filteredProducts.map((p) => (
                     <Tile key={p.id} onClick={() => addMaterial(p)} className="min-h-16 text-xl">
                       {p.name}
-                      {p.code && <span className="ml-2 text-base font-normal text-slate-400">{p.code}</span>}
+                      {p.code && <span className="ml-2 text-base font-normal text-cw-muted">{p.code}</span>}
                     </Tile>
                   ))}
-                  {filteredProducts.length === 0 && <p className="text-lg text-slate-500">Geen artikelen gevonden.</p>}
+                  {filteredProducts.length === 0 && <p className="text-lg text-cw-muted">Geen artikelen gevonden.</p>}
                 </div>
               )}
               {searchOpen && (
@@ -469,18 +480,18 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
                 </div>
               )}
             </div>
-            <aside className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto rounded-2xl bg-white p-4 ring-1 ring-slate-200">
-              <h2 className="text-xl font-bold text-slate-700">Gekozen</h2>
-              {materials.length === 0 && <p className="text-slate-400">Nog niets gekozen.</p>}
+            <aside className="flex w-80 shrink-0 flex-col gap-3 overflow-y-auto rounded-md bg-white p-4 ring-1 ring-cw-line">
+              <h2 className="text-xl font-bold uppercase tracking-wide text-cw-dark">Gekozen</h2>
+              {materials.length === 0 && <p className="text-cw-muted">Nog niets gekozen.</p>}
               {materials.map((m) => (
-                <div key={m.productId} className="rounded-xl bg-slate-50 p-3">
+                <div key={m.productId} className="rounded-md bg-cw-bg p-3">
                   <p className="text-lg font-semibold leading-tight">{m.name}</p>
                   <div className="mt-2 flex items-center gap-2">
-                    <button type="button" onClick={() => changeQty(m.productId, -1)} className="h-12 w-12 rounded-xl bg-slate-200 text-2xl font-bold active:scale-95">
+                    <button type="button" onClick={() => changeQty(m.productId, -1)} className="h-12 w-12 rounded-md bg-cw-dark text-2xl font-bold text-white active:scale-95">
                       −
                     </button>
                     <span className="w-12 text-center text-2xl font-bold tabular-nums">{m.quantity}</span>
-                    <button type="button" onClick={() => changeQty(m.productId, +1)} className="h-12 w-12 rounded-xl bg-slate-200 text-2xl font-bold active:scale-95">
+                    <button type="button" onClick={() => changeQty(m.productId, +1)} className="h-12 w-12 rounded-md bg-cw-dark text-2xl font-bold text-white active:scale-95">
                       +
                     </button>
                   </div>
@@ -491,27 +502,58 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
         </>
       )}
 
+      {step === "photos" && employee && employee.uploadUrl && (
+        <>
+          <Header title="Foto's uploaden?" subtitle={fullName} onBack={() => setStep(s.materialsEnabled ? "materials" : "description")} />
+          <main className="flex flex-1 flex-col items-center justify-center gap-8 p-6">
+            {!showQr ? (
+              <>
+                <p className="max-w-xl text-center text-2xl text-cw-dark">Wil je foto&apos;s van je werk toevoegen? Dat kan met je telefoon.</p>
+                <div className="flex w-full max-w-2xl gap-4">
+                  <BigButton variant="secondary" onClick={() => setStep("confirm")} className="flex-1">
+                    Nee, verder
+                  </BigButton>
+                  <BigButton onClick={() => setShowQr(true)} className="flex-1">
+                    Ja, toon QR-code
+                  </BigButton>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="max-w-xl text-center text-2xl text-cw-dark">Scan met de camera van je telefoon en upload je foto&apos;s.</p>
+                <div className="rounded-md border-t-4 border-cw-accent bg-white p-6 shadow ring-1 ring-cw-line">
+                  <QrCode value={employee.uploadUrl} size={320} />
+                </div>
+                <BigButton onClick={() => setStep("confirm")} className="w-full max-w-md">
+                  Klaar, verder ›
+                </BigButton>
+              </>
+            )}
+          </main>
+        </>
+      )}
+
       {step === "confirm" && employee && project && task && (
         <>
-          <Header title="Klopt dit?" subtitle={fullName} onBack={() => (s.materialsEnabled ? setStep("materials") : setStep("description"))} />
+          <Header title="Klopt dit?" subtitle={fullName} onBack={() => setStep(employee.uploadUrl ? "photos" : s.materialsEnabled ? "materials" : "description")} />
           <main className="flex flex-1 flex-col items-center justify-center gap-6 p-6">
-            <dl className="grid w-full max-w-2xl grid-cols-[auto_1fr] gap-x-6 gap-y-3 rounded-3xl bg-white p-8 text-2xl ring-1 ring-slate-200">
-              <dt className="text-slate-500">Datum</dt>
+            <dl className="grid w-full max-w-2xl grid-cols-[auto_1fr] gap-x-6 gap-y-3 rounded-md border-t-4 border-cw-accent bg-white p-8 text-2xl ring-1 ring-cw-line">
+              <dt className="text-cw-muted">Datum</dt>
               <dd className="font-semibold">Vandaag</dd>
-              <dt className="text-slate-500">Project</dt>
+              <dt className="text-cw-muted">Project</dt>
               <dd className="font-semibold">{project.title}</dd>
-              <dt className="text-slate-500">Taak</dt>
+              <dt className="text-cw-muted">Taak</dt>
               <dd className="font-semibold">{task.title}</dd>
-              <dt className="text-slate-500">Uren</dt>
+              <dt className="text-cw-muted">Uren</dt>
               <dd className="font-semibold">{fmtMinutes(minutes)}</dd>
-              <dt className="text-slate-500">Omschrijving</dt>
-              <dd className="font-semibold">{description || <span className="font-normal text-slate-400">—</span>}</dd>
+              <dt className="text-cw-muted">Omschrijving</dt>
+              <dd className="font-semibold">{description || <span className="font-normal text-cw-muted">—</span>}</dd>
               {s.materialsEnabled && (
                 <>
-                  <dt className="text-slate-500">Materiaal</dt>
+                  <dt className="text-cw-muted">Materiaal</dt>
                   <dd className="font-semibold">
                     {materials.length === 0 ? (
-                      <span className="font-normal text-slate-400">geen</span>
+                      <span className="font-normal text-cw-muted">geen</span>
                     ) : (
                       <ul>
                         {materials.map((m) => (
@@ -546,7 +588,7 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               <p className="text-2xl text-emerald-700">
                 {fmtMinutes(minutes)} op {task?.title}
               </p>
-              <p className="text-lg text-emerald-600">Dit scherm sluit vanzelf.</p>
+              <p className="text-lg text-emerald-700">Dit scherm sluit vanzelf.</p>
             </>
           ) : (
             <>

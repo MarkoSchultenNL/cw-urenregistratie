@@ -38,6 +38,19 @@ export async function clearPin(formData: FormData) {
   revalidatePath("/admin/medewerkers");
 }
 
+export async function setUploadUrl(formData: FormData) {
+  const { tenantId } = await requireSession();
+  const id = String(formData.get("id"));
+  const raw = String(formData.get("uploadUrl") ?? "").trim();
+  if (raw && !/^https?:\/\/\S+$/i.test(raw)) redirect("/admin/medewerkers?error=" + encodeURIComponent("Upload-link moet beginnen met http:// of https://"));
+  db.update(schema.employees)
+    .set({ uploadUrl: raw || null, updatedAt: new Date().toISOString() })
+    .where(and(eq(schema.employees.id, id), eq(schema.employees.tenantId, tenantId)))
+    .run();
+  revalidatePath("/admin/medewerkers");
+  redirect("/admin/medewerkers?ok=upload");
+}
+
 export async function toggleVisible(formData: FormData) {
   const { tenantId } = await requireSession();
   const id = String(formData.get("id"));

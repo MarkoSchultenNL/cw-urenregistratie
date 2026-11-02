@@ -54,6 +54,8 @@ export const employees = sqliteTable(
     lastName: text("last_name").notNull(),
     email: text("email"),
     pinHash: text("pin_hash"),
+    /** Externe link waar de medewerker foto's kan uploaden (getoond als QR op de zuil) */
+    uploadUrl: text("upload_url"),
     visible: integer("visible", { mode: "boolean" }).notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
     tlStatus: text("tl_status").notNull().default("active"),

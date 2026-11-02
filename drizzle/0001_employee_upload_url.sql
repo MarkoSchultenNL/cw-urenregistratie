@@ -1,0 +1,1 @@
+ALTER TABLE `employees` ADD `upload_url` text;

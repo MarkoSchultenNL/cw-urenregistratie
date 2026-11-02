@@ -13,6 +13,7 @@ export async function GET() {
         firstName: schema.employees.firstName,
         lastName: schema.employees.lastName,
         hasPin: schema.employees.pinHash,
+        uploadUrl: schema.employees.uploadUrl,
       })
       .from(schema.employees)
       .where(and(eq(schema.employees.tenantId, tenantId), eq(schema.employees.visible, true), eq(schema.employees.tlStatus, "active")))
@@ -38,6 +39,7 @@ export async function GET() {
       firstName: e.firstName,
       lastName: e.lastName,
       hasPin: !!e.hasPin,
+      uploadUrl: e.uploadUrl ?? null,
       minutesToday: Number(byEmp.get(e.id)?.today ?? 0),
       minutesWeek: Number(byEmp.get(e.id)?.week ?? 0),
     }));

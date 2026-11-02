@@ -19,12 +19,12 @@ export function Tile({
       type="button"
       onClick={onClick}
       className={
-        "min-h-24 rounded-2xl px-5 py-4 text-left text-2xl font-semibold leading-tight shadow-sm transition active:scale-[0.98] " +
+        "min-h-24 rounded-md border-l-4 px-5 py-4 text-left text-2xl font-medium leading-tight shadow-sm transition active:scale-[0.98] " +
         (active
-          ? "bg-sky-600 text-white ring-4 ring-sky-300 "
+          ? "border-cw-accent-dark bg-cw-accent text-white "
           : muted
-            ? "bg-slate-100 text-slate-400 "
-            : "bg-white text-slate-900 ring-1 ring-slate-200 hover:bg-sky-50 ") +
+            ? "border-cw-line bg-cw-bg text-cw-muted "
+            : "border-cw-accent bg-white text-cw-dark ring-1 ring-cw-line hover:bg-cw-accent-soft ") +
         className
       }
     >
@@ -47,8 +47,8 @@ export function BigButton({
   className?: string;
 }) {
   const v = {
-    primary: "bg-sky-600 text-white hover:bg-sky-700",
-    secondary: "bg-slate-200 text-slate-800 hover:bg-slate-300",
+    primary: "bg-cw-accent text-white hover:bg-cw-accent-dark",
+    secondary: "bg-cw-dark text-white hover:bg-cw-dark-2",
     danger: "bg-rose-600 text-white hover:bg-rose-700",
     success: "bg-emerald-600 text-white hover:bg-emerald-700",
   }[variant];
@@ -57,7 +57,7 @@ export function BigButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`min-h-20 rounded-2xl px-8 text-2xl font-bold shadow transition active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100 ${v} ${className}`}
+      className={`min-h-20 rounded-md px-8 text-2xl font-bold uppercase tracking-wide shadow transition active:scale-[0.98] disabled:opacity-40 disabled:active:scale-100 ${v} ${className}`}
     >
       {children}
     </button>
@@ -66,22 +66,24 @@ export function BigButton({
 
 export function Header({ title, subtitle, onBack, right }: { title: string; subtitle?: string; onBack?: () => void; right?: ReactNode }) {
   return (
-    <header className="flex items-center gap-4 border-b border-slate-200 bg-white px-6 py-4">
+    <header className="flex items-center gap-4 border-b-4 border-cw-accent bg-cw-dark px-6 py-3 text-white">
       {onBack && (
         <button
           type="button"
           onClick={onBack}
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-3xl text-slate-700 active:scale-95"
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md bg-white/10 text-3xl text-white active:scale-95"
           aria-label="Terug"
         >
           ‹
         </button>
       )}
       <div className="min-w-0 flex-1">
-        <h1 className="truncate text-3xl font-bold text-slate-900">{title}</h1>
-        {subtitle && <p className="truncate text-lg text-slate-500">{subtitle}</p>}
+        <h1 className="truncate text-3xl font-medium">{title}</h1>
+        {subtitle && <p className="truncate text-lg text-white/70">{subtitle}</p>}
       </div>
       {right}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/coachworkz-logo.png" alt="CoachWorkz" className="ml-2 hidden h-14 w-auto shrink-0 md:block" />
     </header>
   );
 }
@@ -106,8 +108,8 @@ export function Keypad({
           type="button"
           onClick={() => (k === "⌫" ? onBackspace() : k === "C" ? onClear?.() : onDigit(k))}
           className={
-            "h-20 rounded-2xl text-3xl font-bold shadow-sm active:scale-95 " +
-            (k === "C" || k === "⌫" ? "bg-slate-200 text-slate-700" : "bg-white text-slate-900 ring-1 ring-slate-200")
+            "h-20 rounded-md text-3xl font-bold shadow-sm active:scale-95 " +
+            (k === "C" || k === "⌫" ? "bg-cw-dark text-white" : "bg-white text-cw-dark ring-1 ring-cw-line active:bg-cw-accent-soft")
           }
           aria-label={k === "⌫" ? "Wissen" : k === "C" ? (label ?? "Leegmaken") : k}
         >
@@ -137,7 +139,7 @@ export function OnScreenKeyboard({ value, onChange }: { value: string; onChange:
               key={k}
               type="button"
               onClick={() => press(k)}
-              className="h-16 flex-1 basis-0 rounded-xl bg-white text-2xl font-semibold text-slate-900 shadow-sm ring-1 ring-slate-200 active:bg-sky-100"
+              className="h-16 flex-1 basis-0 rounded-md bg-white text-2xl font-semibold text-cw-dark shadow-sm ring-1 ring-cw-line active:bg-cw-accent-soft"
               style={{ maxWidth: 80 }}
             >
               {upper && /[a-z]/.test(k) ? k.toUpperCase() : k}
@@ -146,13 +148,13 @@ export function OnScreenKeyboard({ value, onChange }: { value: string; onChange:
         </div>
       ))}
       <div className="flex justify-center gap-2">
-        <button type="button" onClick={() => onChange(value.slice(0, -1))} className="h-16 w-32 rounded-xl bg-slate-200 text-2xl font-semibold active:bg-slate-300">
+        <button type="button" onClick={() => onChange(value.slice(0, -1))} className="h-16 w-32 rounded-md bg-cw-dark text-2xl font-semibold text-white active:bg-cw-dark-2">
           ⌫
         </button>
-        <button type="button" onClick={() => onChange(value + " ")} className="h-16 flex-1 rounded-xl bg-white text-xl font-semibold ring-1 ring-slate-200 active:bg-sky-100" style={{ maxWidth: 420 }}>
+        <button type="button" onClick={() => onChange(value + " ")} className="h-16 flex-1 rounded-md bg-white text-xl font-semibold ring-1 ring-cw-line active:bg-cw-accent-soft" style={{ maxWidth: 420 }}>
           spatie
         </button>
-        <button type="button" onClick={() => onChange("")} className="h-16 w-32 rounded-xl bg-slate-200 text-xl font-semibold active:bg-slate-300">
+        <button type="button" onClick={() => onChange("")} className="h-16 w-32 rounded-md bg-cw-dark text-xl font-semibold text-white active:bg-cw-dark-2">
           leeg
         </button>
       </div>
@@ -163,7 +165,7 @@ export function OnScreenKeyboard({ value, onChange }: { value: string; onChange:
 export function Spinner({ text = "Laden…" }: { text?: string }) {
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-4 text-slate-500">
-      <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-sky-600" />
+      <div className="h-12 w-12 animate-spin rounded-full border-4 border-cw-line border-t-cw-accent" />
       <p className="text-xl">{text}</p>
     </div>
   );
@@ -171,7 +173,7 @@ export function Spinner({ text = "Laden…" }: { text?: string }) {
 
 export function ErrorBox({ text, onRetry }: { text: string; onRetry?: () => void }) {
   return (
-    <div className="m-6 rounded-2xl bg-rose-50 p-6 text-xl text-rose-800 ring-1 ring-rose-200">
+    <div className="m-6 rounded-md bg-rose-50 p-6 text-xl text-rose-800 ring-1 ring-rose-200">
       <p>{text}</p>
       {onRetry && (
         <BigButton variant="secondary" onClick={onRetry} className="mt-4">

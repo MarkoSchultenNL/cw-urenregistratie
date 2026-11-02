@@ -2,7 +2,7 @@ import { asc, eq } from "drizzle-orm";
 import { getAdminSession } from "@/lib/auth";
 import { db, schema } from "@/lib/db";
 import { Btn, Card, Notice, PageTitle } from "@/components/admin/ui";
-import { clearPin, moveEmployee, setPin, syncEmployeesAction, toggleVisible } from "../actions";
+import { clearPin, moveEmployee, setPin, setUploadUrl, syncEmployeesAction, toggleVisible } from "../actions";
 
 export default async function EmployeesPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string; n?: string }> }) {
   const { tenantId } = (await getAdminSession())!;
@@ -22,6 +22,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
       </PageTitle>
       {ok === "pin" && <Notice kind="ok">Pincode opgeslagen.</Notice>}
       {ok === "sync" && <Notice kind="ok">{n} medewerkers opgehaald uit Teamleader.</Notice>}
+      {ok === "upload" && <Notice kind="ok">Upload-link opgeslagen.</Notice>}
       {error && <Notice kind="error">{error}</Notice>}
       <Card>
         {rows.length === 0 ? (
@@ -35,6 +36,7 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
                 <th>Status</th>
                 <th>Op zuil</th>
                 <th>Pincode</th>
+                <th>Foto-upload-link</th>
               </tr>
             </thead>
             <tbody>
@@ -100,13 +102,26 @@ export default async function EmployeesPage({ searchParams }: { searchParams: Pr
                       )}
                     </div>
                   </td>
+                  <td>
+                    <form action={setUploadUrl} className="flex items-center gap-2">
+                      <input type="hidden" name="id" value={e.id} />
+                      <input
+                        name="uploadUrl"
+                        type="url"
+                        defaultValue={e.uploadUrl ?? ""}
+                        placeholder="https://… (leeg = geen foto-vraag)"
+                        className="w-64 rounded-lg border border-slate-300 px-2 py-1 text-xs"
+                      />
+                      <Btn variant="secondary">Opslaan</Btn>
+                    </form>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </Card>
-      <p className="mt-3 text-xs text-slate-500">Pincodes worden versleuteld opgeslagen en zijn achteraf niet te lezen; stel bij vergeten een nieuwe in. Medewerkers zonder pincode kunnen niet boeken.</p>
+      <p className="mt-3 text-xs text-slate-500">Pincodes worden versleuteld opgeslagen en zijn achteraf niet te lezen; stel bij vergeten een nieuwe in. Medewerkers zonder pincode kunnen niet boeken. De foto-upload-link (bijv. een OneDrive-, Google Drive- of Dropbox-&quot;bestanden aanvragen&quot;-link) wordt op de zuil als QR-code getoond, zodat de medewerker met de telefoon foto&apos;s kan uploaden.</p>
     </>
   );
 }

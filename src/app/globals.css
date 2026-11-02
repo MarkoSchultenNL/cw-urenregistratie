@@ -2,6 +2,16 @@
 
 @theme inline {
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-cw: "Alegreya Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  /* CoachWorkz-huisstijl (coachworkz.nl) */
+  --color-cw-dark: #333333;
+  --color-cw-dark-2: #444444;
+  --color-cw-accent: #ecae35;
+  --color-cw-accent-dark: #c98f1f;
+  --color-cw-accent-soft: #fbf1dc;
+  --color-cw-bg: #eeeeee;
+  --color-cw-line: #dddddd;
+  --color-cw-muted: #777777;
 }
 
 html,

@@ -75,6 +75,9 @@ docker compose exec app sh -c 'cat /data/cw.sqlite' > backup-$(date +%F).sqlite
    `msedge --kiosk https://<domein>/kiosk --edge-kiosk-type=fullscreen` of `chrome --kiosk https://<domein>/kiosk`
 3. Voer de koppelcode in. De koppeling blijft in die browser bewaard (cookie, 10 jaar). Wis je de browserdata, maak dan in het beheer een nieuwe code.
 4. *Beheer → Medewerkers*: haal de medewerkers op uit Teamleader, zet per medewerker een pincode en verberg wie niet op de zuil hoort.
+5. Optioneel per medewerker een **foto-upload-link** (bijv. een OneDrive/Google Drive/Dropbox "bestanden aanvragen"-link). De zuil vraagt dan vóór het bevestigen of de medewerker foto's wil uploaden en toont een QR-code naar die link.
+
+De zuil heeft een toetsenbordlaag (pincode, koppelcode, uren met +/−/Enter, omschrijving, zoeken) én werkt met een fysiek toetsenbord/numpad. De zuil-kant gebruikt de CoachWorkz-huisstijl (antraciet, goud-oranje accent, Alegreya Sans, logo in `public/coachworkz-logo.png`).
 
 ## Projectstructuur
 
