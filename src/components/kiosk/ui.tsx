@@ -183,7 +183,13 @@ export function ErrorBox({ text, onRetry }: { text: string; onRetry?: () => void
 }
 
 export function fmtMinutes(m: number) {
+  if (m <= 0) return "0 uur";
   const h = Math.floor(m / 60);
   const r = m % 60;
   return r === 0 ? `${h} uur` : h === 0 ? `${r} min` : `${h} uur ${r} min`;
+}
+
+/** Compacte notatie u:mm, bv. 2:15 */
+export function fmtHM(m: number) {
+  return `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`;
 }

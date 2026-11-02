@@ -1,8 +1,8 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { BigButton, ErrorBox, Header, Keypad, OnScreenKeyboard, Spinner, Tile, fmtMinutes } from "./ui";
+import { BigButton, ErrorBox, Header, Keypad, OnScreenKeyboard, Spinner, Tile, fmtHM, fmtMinutes } from "./ui";
 
-type Employee = { id: string; firstName: string; lastName: string; hasPin: boolean };
+type Employee = { id: string; firstName: string; lastName: string; hasPin: boolean; minutesToday: number; minutesWeek: number };
 type Settings = { materialsEnabled: boolean; descriptionRequired: boolean; idleResetSeconds: number; stepMinutes: number; maxHoursPerEntry: number };
 type Project = { id: string; title: string; project_key?: number };
 type Task = { id: string; title: string; status: string; workTypeId: string | null };
@@ -23,7 +23,13 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
   const [bootError, setBootError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("employees");
   const [employee, setEmployee] = useState<Employee | null>(null);
-  const [pin, setPin] = useState("");
+  const [pin, setPinState] = useState("");
+  const pinRef = useRef("");
+  const setPin = useCallback((v: string | ((p: string) => string)) => {
+    const next = typeof v === "function" ? v(pinRef.current) : v;
+    pinRef.current = next;
+    setPinState(next);
+  }, []);
   const [pinError, setPinError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [projects, setProjects] = useState<Project[] | null>(null);
@@ -134,12 +140,58 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
     [employee, busy, loadProjects],
   );
 
-  const onPinDigit = (d: string) => {
-    if (pin.length >= 4 || busy) return;
-    const next = pin + d;
-    setPin(next);
-    if (next.length === 4) submitPin(next);
-  };
+  const onPinDigit = useCallback(
+    (d: string) => {
+      if (pinRef.current.length >= 4 || busy) return;
+      const next = pinRef.current + d;
+      setPin(next);
+      if (next.length === 4) submitPin(next);
+    },
+    [busy, submitPin, setPin],
+  );
+
+  const afterDescriptionRef = useRef<() => void>(() => {});
+  const confirmRef = useRef<() => void>(() => {});
+
+  // Fysiek toetsenbord (zuil met toetsenbord of numpad)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const k = e.key;
+      if (step === "pin") {
+        if (/^\d$/.test(k)) onPinDigit(k);
+        else if (k === "Backspace") setPin((p) => p.slice(0, -1));
+        else if (k === "Escape") reset();
+        else return;
+        e.preventDefault();
+      } else if (step === "description") {
+        if (k === "Backspace") setDescription((d) => d.slice(0, -1));
+        else if (k === "Enter") afterDescriptionRef.current();
+        else if (k.length === 1) setDescription((d) => d + k);
+        else return;
+        e.preventDefault();
+      } else if (step === "materials") {
+        if (k === "Backspace") setProductSearch((s) => s.slice(0, -1));
+        else if (k === "Escape") setProductSearch("");
+        else if (k.length === 1) {
+          setSearchOpen(false);
+          setProductSearch((s) => s + k);
+        } else return;
+        e.preventDefault();
+      } else if (step === "hours") {
+        if (k === "+" || k === "ArrowUp") setMinutes((m) => Math.min((boot?.settings.maxHoursPerEntry ?? 12) * 60, m + (boot?.settings.stepMinutes ?? 15)));
+        else if (k === "-" || k === "ArrowDown") setMinutes((m) => Math.max(0, m - (boot?.settings.stepMinutes ?? 15)));
+        else if (k === "Enter" && minutes > 0) setStep("description");
+        else return;
+        e.preventDefault();
+      } else if (step === "confirm" && k === "Enter") {
+        e.preventDefault();
+        confirmRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [step, onPinDigit, reset, boot, minutes]);
 
   const chooseProject = (p: Project) => {
     setProject(p);
@@ -201,6 +253,11 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
     }
   };
 
+  useEffect(() => {
+    afterDescriptionRef.current = afterDescription;
+    confirmRef.current = confirm;
+  });
+
   const filteredProducts = useMemo(() => {
     if (!products) return [];
     const q = productSearch.trim().toLowerCase();
@@ -228,6 +285,11 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
               <Tile key={e.id} onClick={() => chooseEmployee(e)}>
                 <span className="block text-3xl">{e.firstName}</span>
                 <span className="block text-xl font-normal text-slate-500">{e.lastName}</span>
+                <span className="mt-2 block text-base font-medium tabular-nums text-slate-500">
+                  <span className={e.minutesToday > 0 ? "text-sky-700" : ""}>Vandaag {fmtHM(e.minutesToday)}</span>
+                  <span className="mx-2 text-slate-300">·</span>
+                  <span>Week {fmtHM(e.minutesWeek)}</span>
+                </span>
               </Tile>
             ))}
           </main>
