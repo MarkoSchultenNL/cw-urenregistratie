@@ -123,6 +123,7 @@ export async function saveSettingsAction(formData: FormData) {
     idleResetSeconds: Math.max(20, Number(formData.get("idleResetSeconds") ?? 90)),
     stepMinutes: [5, 10, 15, 30, 60].includes(Number(formData.get("stepMinutes"))) ? Number(formData.get("stepMinutes")) : 15,
     maxHoursPerEntry: Math.min(24, Math.max(1, Number(formData.get("maxHoursPerEntry") ?? 12))),
+    kioskScale: Math.max(0, Math.min(400, Number(formData.get("kioskScale") ?? 0) || 0)),
     productFilterField: String(formData.get("productFilterField") ?? "").trim(),
     productFilterValue: String(formData.get("productFilterValue") ?? "").trim(),
   };

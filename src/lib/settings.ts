@@ -18,6 +18,8 @@ export type Settings = {
   productFilterValue: string;
   /** Laatste artikelsynchronisatie (ISO) */
   productsSyncedAt: string;
+  /** Schaal van de zuil-UI in procent; 0 = automatisch op schermbreedte */
+  kioskScale: number;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   productFilterField: "",
   productFilterValue: "",
   productsSyncedAt: "",
+  kioskScale: 0,
 };
 
 export function getSettings(tenantId: string): Settings {

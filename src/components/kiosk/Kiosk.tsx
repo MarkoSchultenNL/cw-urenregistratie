@@ -4,7 +4,7 @@ import { BigButton, ErrorBox, Header, Keypad, OnScreenKeyboard, Spinner, Tile, f
 import QrCode from "./QrCode";
 
 type Employee = { id: string; firstName: string; lastName: string; hasPin: boolean; uploadUrl: string | null; minutesToday: number; minutesWeek: number };
-type Settings = { materialsEnabled: boolean; descriptionRequired: boolean; idleResetSeconds: number; stepMinutes: number; maxHoursPerEntry: number };
+type Settings = { materialsEnabled: boolean; descriptionRequired: boolean; idleResetSeconds: number; stepMinutes: number; maxHoursPerEntry: number; kioskScale?: number };
 type Project = { id: string; title: string; project_key?: number };
 type Task = { id: string; title: string; status: string; workTypeId: string | null };
 type Product = { id: string; name: string; code: string | null };
@@ -118,6 +118,13 @@ export default function Kiosk({ deviceName }: { deviceName: string }) {
       })
       .catch(() => {});
   };
+
+  // Vaste schaal uit het beheer doorgeven aan de KioskScaler
+  useEffect(() => {
+    const pct = boot?.settings.kioskScale ?? 0;
+    if (pct > 0) document.documentElement.style.setProperty("--kiosk-scale", String(pct / 100));
+    else document.documentElement.style.removeProperty("--kiosk-scale");
+  }, [boot]);
 
   // Startscherm elke minuut verversen (uren, nieuwe medewerkers, instellingen)
   useEffect(() => {

@@ -36,6 +36,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
               <input type="number" name="maxHoursPerEntry" min={1} max={24} defaultValue={s.maxHoursPerEntry} className="ml-2 w-20 rounded-lg border border-slate-300 px-2 py-1" />
             </label>
             <label className="block text-sm">
+              Schermschaal zuil
+              <input type="number" name="kioskScale" min={0} max={400} step={5} defaultValue={s.kioskScale} className="ml-2 w-20 rounded-lg border border-slate-300 px-2 py-1" /> %
+              <span className="ml-2 text-slate-500">(0 = automatisch: 1280 px breed = 100%, breder scherm schaalt mee; bijv. 150 voor anderhalf keer zo groot)</span>
+            </label>
+            <label className="block text-sm">
               Terug naar startscherm na
               <input type="number" name="idleResetSeconds" min={20} defaultValue={s.idleResetSeconds} className="ml-2 w-24 rounded-lg border border-slate-300 px-2 py-1" /> seconden zonder
               activiteit

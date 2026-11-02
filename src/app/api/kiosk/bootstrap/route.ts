@@ -51,6 +51,7 @@ export async function GET() {
         descriptionRequired: s.descriptionRequired,
         idleResetSeconds: s.idleResetSeconds,
         stepMinutes: s.stepMinutes,
+        kioskScale: s.kioskScale,
         maxHoursPerEntry: s.maxHoursPerEntry,
       },
     };
