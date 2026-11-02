@@ -1,36 +1,97 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CW Urenregistratie
 
-## Getting Started
+Urenregistratie op een touchscreen-zuil, gekoppeld aan **Teamleader Focus**.
+Medewerkers tikken hun naam aan, voeren een pincode in, kiezen project → taak, vullen uren, omschrijving en verbruiksmateriaal in en bevestigen. De boeking komt als time tracking (en materiaal als projectregel) in Teamleader terecht.
 
-First, run the development server:
+Eén codebase, drie onderdelen:
+
+| Onderdeel | URL | Voor wie |
+|---|---|---|
+| Zuil | `/kiosk` | medewerkers (touchscreen, kioskmodus) |
+| Beheer | `/admin` | beheerder (pincodes, zuilen, instellingen, boekingen, Teamleader-koppeling) |
+| API | `/api/...` | intern |
+
+Stack: Next.js 16 · TypeScript · Drizzle ORM · SQLite · Docker + Caddy. Het datamodel heeft een tenant-laag zodat het later als Marketplace-integratie voor meerdere klanten kan draaien.
+
+## Hoe de Teamleader-koppeling werkt
+
+- De beheerder koppelt **één** Teamleader-account (OAuth2). De zuil boekt namens medewerkers via `timeTracking.add` met `user_id`; medewerkers hoeven zelf niet in te loggen bij Teamleader.
+- Projecten en taken komen uit de nieuwe projectmodule (`projects-v2`). Uren worden geboekt op een **taak** (`subject.type = nextgenTask`).
+- Verbruiksmateriaal komt uit de artikelenlijst (`products.list`) en wordt als materiaalregel op het **project** gezet (`projects-v2/materials.create`). In het beheer zie je welk materiaal bij welke boeking hoort.
+- Datum is altijd vandaag. Of Teamleader "uren per dag" of "met starttijd" verwacht wordt bij de eerste boeking automatisch bepaald en onthouden.
+- Mislukt het doorsturen (geen netwerk, token verlopen), dan blijft de boeking lokaal bewaard; de beheerder stuurt hem opnieuw vanuit *Boekingen*.
+- Let op `historic_time_tracking_limit` in Teamleader: ouder dan die grens kan niet meer worden teruggeboekt.
+
+## Lokaal draaien (zonder Teamleader)
 
 ```bash
+npm install
+cp .env.example .env     # zet TEAMLEADER_MOCK=1 en een ADMIN_PASSWORD
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Beheer: http://localhost:3000/admin (ADMIN_EMAIL / ADMIN_PASSWORD uit `.env`)
+- Zuil: http://localhost:3000/kiosk → koppelcode uit *Beheer → Zuilen*
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Met `TEAMLEADER_MOCK=1` worden nepmedewerkers, -projecten en -artikelen gebruikt en wordt niets naar Teamleader gestuurd.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Teamleader OAuth-app aanmaken
 
-## Learn More
+1. Ga naar https://marketplace.focus.teamleader.eu → *Build* → nieuwe integratie.
+2. Redirect-URI: `https://<jouw-domein>/api/teamleader/callback`
+3. Scopes: `users`, `time_tracking`, `projects`, `products`.
+4. Zet Client ID en Secret in `.env` (`TEAMLEADER_CLIENT_ID`, `TEAMLEADER_CLIENT_SECRET`) en zet `TEAMLEADER_MOCK=0`.
+5. In het beheer: *Teamleader → Koppelen*. Log in met een beheerder die uren voor anderen mag boeken.
 
-To learn more about Next.js, take a look at the following resources:
+## Deploy op een server (Hetzner, Docker)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+git clone git@github.com:MarkoSchultenNL/cw-urenregistratie.git
+cd cw-urenregistratie
+cp .env.example .env
+nano .env     # APP_URL=https://uren.jouwdomein.nl, DOMAIN=uren.jouwdomein.nl, SESSION_SECRET, ADMIN_*, TEAMLEADER_*
+docker compose up -d --build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Caddy regelt automatisch het HTTPS-certificaat (DNS A-record van `DOMAIN` moet naar de server wijzen; poort 80/443 open).
+De database staat in het Docker-volume `cw-data` (`/data/cw.sqlite`).
 
-## Deploy on Vercel
+Updaten:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+git pull && docker compose up -d --build
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Back-up van de database:
+
+```bash
+docker compose exec app sh -c 'cat /data/cw.sqlite' > backup-$(date +%F).sqlite
+```
+
+## Zuil inrichten
+
+1. *Beheer → Zuilen → Zuil toevoegen*; noteer de 6-cijferige koppelcode.
+2. Open op de zuil `https://<domein>/kiosk` in een browser in kioskmodus, bijvoorbeeld Chrome/Edge:
+   `msedge --kiosk https://<domein>/kiosk --edge-kiosk-type=fullscreen` of `chrome --kiosk https://<domein>/kiosk`
+3. Voer de koppelcode in. De koppeling blijft in die browser bewaard (cookie, 10 jaar). Wis je de browserdata, maak dan in het beheer een nieuwe code.
+4. *Beheer → Medewerkers*: haal de medewerkers op uit Teamleader, zet per medewerker een pincode en verberg wie niet op de zuil hoort.
+
+## Projectstructuur
+
+```
+src/app/kiosk            zuil-pagina
+src/app/admin            beheeromgeving (server components + server actions)
+src/app/api/kiosk        endpoints voor de zuil
+src/app/api/teamleader   OAuth connect/callback
+src/components/kiosk     zuil-UI (tegels, keypad, schermtoetsenbord)
+src/lib/teamleader       API-client, OAuth, mock
+src/lib/sync.ts          boeking opslaan + doorsturen + opnieuw proberen
+src/lib/db               Drizzle-schema en SQLite-verbinding
+drizzle/                 migraties (automatisch uitgevoerd bij start)
+```
+
+Schema wijzigen: pas `src/lib/db/schema.ts` aan en draai `npx drizzle-kit generate`.
+
+## Later: meerdere klanten / Marketplace
+
+Alles is al per `tenant` opgeslagen. Voor Marketplace komt er nog bij: tenant aanmaken bij OAuth-koppeling (account-id uit `users.me`), admin-login via "Login met Teamleader", webhooks (`account.deactivated`, `user.deactivated`) en Postgres i.p.v. SQLite.
