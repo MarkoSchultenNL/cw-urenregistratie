@@ -21,6 +21,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             <label className="flex items-center gap-2">
               <input type="checkbox" name="descriptionRequired" defaultChecked={s.descriptionRequired} /> Beschrijving verplicht
             </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="projectsAssignedOnly" defaultChecked={s.projectsAssignedOnly} /> Alleen projecten tonen met open taken die aan de medewerker (of zijn team) zijn toegewezen
+            </label>
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="tasksAssignedOnly" defaultChecked={s.tasksAssignedOnly} /> Binnen een project ook alleen de eigen taken tonen
+            </label>
             <label className="block text-sm">
               Uren invoeren in stappen van
               <select name="stepMinutes" defaultValue={s.stepMinutes} className="ml-2 rounded-lg border border-slate-300 px-2 py-1">

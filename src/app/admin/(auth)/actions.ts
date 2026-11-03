@@ -119,6 +119,8 @@ export async function saveSettingsAction(formData: FormData) {
     materialsEnabled: formData.get("materialsEnabled") === "on",
     descriptionRequired: formData.get("descriptionRequired") === "on",
     invoiceable: formData.get("invoiceable") === "on",
+    projectsAssignedOnly: formData.get("projectsAssignedOnly") === "on",
+    tasksAssignedOnly: formData.get("tasksAssignedOnly") === "on",
     defaultStartTime: String(formData.get("defaultStartTime") ?? "08:00"),
     idleResetSeconds: Math.max(20, Number(formData.get("idleResetSeconds") ?? 90)),
     stepMinutes: [5, 10, 15, 30, 60].includes(Number(formData.get("stepMinutes"))) ? Number(formData.get("stepMinutes")) : 15,

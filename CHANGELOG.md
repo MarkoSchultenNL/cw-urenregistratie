@@ -2,6 +2,10 @@
 
 Versienummer staat in `package.json` ("version") en wordt rechtsonder getoond in beheer en zuil. Verhoog het bij elke uitrol (patch voor fixes, minor voor nieuwe functies).
 
+## 0.3.0 — 2026-11-03
+- Zuil: alleen projecten met open taken die aan de medewerker (of zijn team) zijn toegewezen; optioneel ook alleen eigen taken (instelbaar)
+- Teamleader: teams per medewerker worden meegenomen bij het ophalen
+
 ## 0.2.2 — 2026-11-02
 - Beheer: subtiele CoachWorkz-huisstijl (donkere zijbalk met logo, gouden accenten, Alegreya Sans koppen)
 

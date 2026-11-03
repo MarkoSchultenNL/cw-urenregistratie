@@ -30,6 +30,10 @@ export default function Kiosk({ deviceName }: { deviceName: string; deviceKey: s
   const [bootError, setBootError] = useState<string | null>(null);
   const [step, setStep] = useState<Step>("employees");
   const [employee, setEmployee] = useState<Employee | null>(null);
+  const employeeRef = useRef<Employee | null>(null);
+  useEffect(() => {
+    employeeRef.current = employee;
+  }, [employee]);
   const [pin, setPinState] = useState("");
   const pinRef = useRef("");
   const setPin = useCallback((v: string | ((p: string) => string)) => {
@@ -136,7 +140,8 @@ export default function Kiosk({ deviceName }: { deviceName: string; deviceKey: s
   const loadProjects = useCallback(() => {
     setLoadError(null);
     setProjects(null);
-    api<{ projects: Project[] }>("/api/kiosk/projects")
+    const emp = employeeRef.current;
+    api<{ projects: Project[] }>(`/api/kiosk/projects${emp ? `?employee=${encodeURIComponent(emp.id)}` : ""}`)
       .then((j) => setProjects(j.projects))
       .catch((e) => setLoadError(e.message));
   }, []);
@@ -227,7 +232,7 @@ export default function Kiosk({ deviceName }: { deviceName: string; deviceKey: s
     setTasks(null);
     setLoadError(null);
     setStep("task");
-    api<{ tasks: Task[] }>(`/api/kiosk/tasks?project=${encodeURIComponent(p.id)}`)
+    api<{ tasks: Task[] }>(`/api/kiosk/tasks?project=${encodeURIComponent(p.id)}${employee ? `&employee=${encodeURIComponent(employee.id)}` : ""}`)
       .then((j) => setTasks(j.tasks))
       .catch((e) => setLoadError(e.message));
   };
@@ -385,7 +390,7 @@ export default function Kiosk({ deviceName }: { deviceName: string; deviceKey: s
             ) : !projects ? (
               <Spinner text="Projecten ophalen…" />
             ) : projects.length === 0 ? (
-              <p className="text-xl text-cw-muted">Geen open projecten gevonden in Teamleader.</p>
+              <p className="text-xl text-cw-muted">Er zijn geen projecten met open taken die aan jou zijn toegewezen. Vraag de planner om je aan een taak te koppelen in Teamleader.</p>
             ) : (
               <div className="grid auto-rows-min grid-cols-1 gap-4 @3xl:grid-cols-2 @5xl:grid-cols-3">
                 {projects.map((p) => (

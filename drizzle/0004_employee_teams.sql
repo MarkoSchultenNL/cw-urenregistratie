@@ -1,0 +1,1 @@
+ALTER TABLE `employees` ADD `tl_team_ids` text DEFAULT '[]' NOT NULL;

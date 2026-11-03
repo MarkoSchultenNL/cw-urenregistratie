@@ -143,7 +143,7 @@ export async function syncEmployees(tenantId: string) {
     const cur = byTl.get(u.id);
     if (cur) {
       db.update(schema.employees)
-        .set({ firstName: u.first_name, lastName: u.last_name, email: u.email, tlStatus: "active", updatedAt: new Date().toISOString() })
+        .set({ firstName: u.first_name, lastName: u.last_name, email: u.email, tlStatus: "active", tlTeamIds: JSON.stringify(u.teamIds ?? []), updatedAt: new Date().toISOString() })
         .where(eq(schema.employees.id, cur.id))
         .run();
     } else {
@@ -155,6 +155,7 @@ export async function syncEmployees(tenantId: string) {
           firstName: u.first_name,
           lastName: u.last_name,
           email: u.email,
+          tlTeamIds: JSON.stringify(u.teamIds ?? []),
           visible: true,
           sortOrder: order++,
         })

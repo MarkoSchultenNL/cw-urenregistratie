@@ -4,6 +4,7 @@ export type TlUser = {
   last_name: string;
   email: string;
   status: "active" | "deactivated";
+  teamIds?: string[];
 };
 
 export type TlProject = {
@@ -19,6 +20,9 @@ export type TlTask = {
   projectId: string;
   status: "to_do" | "in_progress" | "on_hold" | "done";
   workTypeId: string | null;
+  /** Toegewezen users/teams (Teamleader user-ids / team-ids) */
+  assigneeUserIds: string[];
+  assigneeTeamIds: string[];
 };
 
 export type TlProduct = {

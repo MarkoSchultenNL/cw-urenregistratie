@@ -59,6 +59,8 @@ export const employees = sqliteTable(
     visible: integer("visible", { mode: "boolean" }).notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
     tlStatus: text("tl_status").notNull().default("active"),
+    /** Teamleader team-ids (JSON array) voor taken die aan een team zijn toegewezen */
+    tlTeamIds: text("tl_team_ids").notNull().default("[]"),
     updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
   },
   (t) => [index("employees_tenant_user").on(t.tenantId, t.tlUserId)],

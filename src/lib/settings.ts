@@ -20,6 +20,10 @@ export type Settings = {
   productsSyncedAt: string;
   /** Schaal van de zuil-UI in procent; 0 = automatisch op schermbreedte */
   kioskScale: number;
+  /** Alleen projecten tonen met open taken die aan de medewerker (of zijn team) zijn toegewezen */
+  projectsAssignedOnly: boolean;
+  /** Binnen zo'n project ook alleen de eigen taken tonen */
+  tasksAssignedOnly: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -34,6 +38,8 @@ export const DEFAULT_SETTINGS: Settings = {
   productFilterValue: "",
   productsSyncedAt: "",
   kioskScale: 0,
+  projectsAssignedOnly: true,
+  tasksAssignedOnly: false,
 };
 
 export function getSettings(tenantId: string): Settings {

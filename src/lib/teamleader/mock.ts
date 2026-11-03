@@ -17,15 +17,15 @@ const projects: TlProject[] = [
 ];
 
 const tasks: TlTask[] = [
-  { id: "t-1", title: "Sloopwerk", projectId: "p-1", status: "in_progress", workTypeId: null },
-  { id: "t-2", title: "Elektra", projectId: "p-1", status: "to_do", workTypeId: null },
-  { id: "t-3", title: "Stucwerk", projectId: "p-1", status: "to_do", workTypeId: null },
-  { id: "t-4", title: "Afwerking", projectId: "p-1", status: "done", workTypeId: null },
-  { id: "t-5", title: "Inspectie", projectId: "p-2", status: "in_progress", workTypeId: null },
-  { id: "t-6", title: "Reparatie", projectId: "p-2", status: "to_do", workTypeId: null },
-  { id: "t-7", title: "Fundering", projectId: "p-3", status: "in_progress", workTypeId: null },
-  { id: "t-8", title: "Staalconstructie", projectId: "p-3", status: "to_do", workTypeId: null },
-  { id: "t-9", title: "Dakbedekking", projectId: "p-3", status: "to_do", workTypeId: null },
+  { id: "t-1", title: "Sloopwerk", projectId: "p-1", status: "in_progress", workTypeId: null, assigneeUserIds: ["u-1","u-3"], assigneeTeamIds: [] },
+  { id: "t-2", title: "Elektra", projectId: "p-1", status: "to_do", workTypeId: null, assigneeUserIds: ["u-1"], assigneeTeamIds: [] },
+  { id: "t-3", title: "Stucwerk", projectId: "p-1", status: "to_do", workTypeId: null, assigneeUserIds: ["u-2"], assigneeTeamIds: [] },
+  { id: "t-4", title: "Afwerking", projectId: "p-1", status: "done", workTypeId: null, assigneeUserIds: ["u-1"], assigneeTeamIds: [] },
+  { id: "t-5", title: "Inspectie", projectId: "p-2", status: "in_progress", workTypeId: null, assigneeUserIds: ["u-2","u-4"], assigneeTeamIds: [] },
+  { id: "t-6", title: "Reparatie", projectId: "p-2", status: "to_do", workTypeId: null, assigneeUserIds: ["u-3"], assigneeTeamIds: [] },
+  { id: "t-7", title: "Fundering", projectId: "p-3", status: "in_progress", workTypeId: null, assigneeUserIds: ["u-1","u-5"], assigneeTeamIds: [] },
+  { id: "t-8", title: "Staalconstructie", projectId: "p-3", status: "to_do", workTypeId: null, assigneeUserIds: ["u-6"], assigneeTeamIds: [] },
+  { id: "t-9", title: "Dakbedekking", projectId: "p-3", status: "to_do", workTypeId: null, assigneeUserIds: [], assigneeTeamIds: [] },
 ];
 
 const products: TlProduct[] = [

@@ -84,7 +84,30 @@ export async function me(tenantId: string): Promise<TlMe> {
 
 export async function listUsers(tenantId: string): Promise<TlUser[]> {
   if (isMock()) return mockApi.users();
-  return listAll<TlUser>(tenantId, "users.list", { filter: { status: ["active"] } });
+  type Row = TlUser & { teams?: { id: string }[] };
+  const rows = await listAll<Row>(tenantId, "users.list", { filter: { status: ["active"] } });
+  return rows.map((u) => ({ ...u, teamIds: (u.teams ?? []).map((t) => t.id) }));
+}
+
+/**
+ * Projecten met minstens één open taak die aan deze medewerker (of zijn team) is toegewezen,
+ * plus per project die taken. Gebruikt de gecachte taaklijsten.
+ */
+export async function projectsForUser(tenantId: string, tlUserId: string, teamIds: string[]): Promise<{ projects: TlProject[]; tasksByProject: Record<string, TlTask[]> }> {
+  const all = await listProjects(tenantId);
+  const tasksByProject: Record<string, TlTask[]> = {};
+  const lists = await Promise.all(all.map((p) => listTasks(tenantId, p.id).catch(() => [] as TlTask[])));
+  const projects: TlProject[] = [];
+  all.forEach((p, i) => {
+    const mine = lists[i].filter(
+      (t) => t.status !== "done" && (t.assigneeUserIds.includes(tlUserId) || t.assigneeTeamIds.some((id) => teamIds.includes(id))),
+    );
+    if (mine.length) {
+      projects.push(p);
+      tasksByProject[p.id] = mine;
+    }
+  });
+  return { projects, tasksByProject };
 }
 
 export function listProjects(tenantId: string): Promise<TlProject[]> {
@@ -99,7 +122,7 @@ export function listProjects(tenantId: string): Promise<TlProject[]> {
 }
 
 export function listTasks(tenantId: string, projectId: string): Promise<TlTask[]> {
-  return cached(`${tenantId}:tasks:${projectId}`, 60_000, async () => {
+  return cached(`${tenantId}:tasks:${projectId}`, 3 * 60_000, async () => {
     if (isMock()) return mockApi.tasks(projectId);
     // Taken hebben geen project-filter; via de projectregels.
     type Line = { line: { type: string; id: string } };
@@ -115,6 +138,7 @@ export function listTasks(tenantId: string, projectId: string): Promise<TlTask[]
       project: { id: string };
       status: TlTask["status"];
       work_type: { id: string } | null;
+      assignees?: { assignee: { type: "user" | "team"; id: string } }[];
     };
     const tasks: Row[] = [];
     for (let i = 0; i < ids.length; i += PAGE_SIZE) {
@@ -127,7 +151,15 @@ export function listTasks(tenantId: string, projectId: string): Promise<TlTask[]
     // Volgorde van de projectregels aanhouden, afgeronde taken achteraan.
     const order = new Map(ids.map((id, i) => [id, i]));
     return tasks
-      .map((t) => ({ id: t.id, title: t.title, projectId: t.project.id, status: t.status, workTypeId: t.work_type?.id ?? null }))
+      .map((t) => ({
+        id: t.id,
+        title: t.title,
+        projectId: t.project.id,
+        status: t.status,
+        workTypeId: t.work_type?.id ?? null,
+        assigneeUserIds: (t.assignees ?? []).filter((a) => a.assignee.type === "user").map((a) => a.assignee.id),
+        assigneeTeamIds: (t.assignees ?? []).filter((a) => a.assignee.type === "team").map((a) => a.assignee.id),
+      }))
       .sort((a, b) => (a.status === "done") === (b.status === "done") ? order.get(a.id)! - order.get(b.id)! : a.status === "done" ? 1 : -1);
   });
 }
