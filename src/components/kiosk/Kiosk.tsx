@@ -242,13 +242,14 @@ export default function Kiosk({ deviceName }: { deviceName: string; deviceKey: s
     setStep("hours");
   };
 
+  /** Artikellijst altijd vers ophalen; de vorige lijst blijft staan tot de nieuwe binnen is. */
   const goMaterials = () => {
     setStep("materials");
-    if (!products) {
-      api<{ products: Product[] }>("/api/kiosk/products")
-        .then((j) => setProducts(j.products))
-        .catch((e) => setLoadError(e.message));
-    }
+    api<{ products: Product[] }>("/api/kiosk/products")
+      .then((j) => setProducts(j.products))
+      .catch((e) => {
+        if (!products) setLoadError(e.message);
+      });
   };
 
   /** Na materiaal (of omschrijving): foto-vraag als de medewerker een upload-link heeft, anders bevestigen. */
